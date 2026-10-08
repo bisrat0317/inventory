@@ -598,30 +598,66 @@
         <section id="view-reports" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Enterprise Intelligence &amp; Analytics</h1>
-                    <p>Real-time FIFO financial yield valuations, sales revenue tracking, and inventory health metrics.</p>
+                    <h1>Business Reports &amp; Insights</h1>
+                    <p>Track your sales, stock purchases, profits, damaged goods, and inventory at a glance.</p>
                 </div>
-                <button class="btn btn-secondary" onclick="toggleAnalyticsVisualizer()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                    Toggle Interactive Charts
-                </button>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="toggleAnalyticsVisualizer()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                        Toggle Charts
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Print Report
+                    </button>
+                </div>
             </div>
 
+            <!-- Simple Explanation Guide Card (Collapsible) -->
+            <div class="card" style="background:var(--surface-hover); border-left:4px solid var(--primary); margin-bottom:20px; padding:16px 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleReportGuide()">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:600; color:var(--text-primary); font-size:14px;">
+                        <span>💡 How these report numbers work (Simple Guide)</span>
+                    </div>
+                    <span id="guideToggleIcon" style="font-size:12px; color:var(--text-muted);">▼ Click to show/hide</span>
+                </div>
+                <div id="reportGuideContent" style="display:none; margin-top:14px; font-size:13px; color:var(--text-secondary); line-height:1.6;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--primary);">💵 Total Sales Revenue:</strong> Total cash collected from customer sales in this period.
+                        </div>
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--info);">🛒 Total Purchases:</strong> Total money spent buying new stock from suppliers in this period.
+                        </div>
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--success);">💰 Net Profit:</strong> Actual profit earned (<code style="color:var(--text-primary);">Sales Revenue</code> minus <code style="color:var(--text-primary);">Cost of Items Sold</code>).
+                        </div>
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--warning);">🏬 Current Stock Value:</strong> The estimated value of products currently sitting on your shelves.
+                        </div>
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--danger);">⚠️ Damaged / Lost Stock:</strong> Goods written off due to breaks, expiry, or loss, with estimated loss cost.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="form-group">
-                    <label for="reportsBranchSelect">Scope Context</label>
+                    <label for="reportsBranchSelect">Branch Location</label>
                     <select id="reportsBranchSelect" class="form-control" onchange="loadExecutiveReports()">
                         <option value="all">All Branches Combined</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="reportsRangeType">Timeline Filter</label>
+                    <label for="reportsRangeType">Time Period</label>
                     <select id="reportsRangeType" class="form-control" onchange="handleReportsRangeChange()">
-                        <option value="today">Today (Live Feed)</option>
-                        <option value="weekly">Current Week</option>
-                        <option value="monthly">Current Month</option>
-                        <option value="yearly">Current Year</option>
-                        <option value="custom">Custom Range Window</option>
+                        <option value="today">Today</option>
+                        <option value="weekly">This Week</option>
+                        <option value="monthly">This Month</option>
+                        <option value="yearly">This Year</option>
+                        <option value="custom">Custom Date Range</option>
                     </select>
                 </div>
                 <div class="form-group" id="reportsCustomStartGroup" style="display:none;">
@@ -632,30 +668,34 @@
                     <label for="reportsEndDate">End Date (Optional)</label>
                     <input type="date" id="reportsEndDate" class="form-control" onchange="loadExecutiveReports()">
                 </div>
-                <button class="btn btn-primary" onclick="loadExecutiveReports()">Execute Query</button>
+                <button class="btn btn-primary" onclick="loadExecutiveReports()">Filter Report</button>
             </div>
 
             <!-- KPI Cards Strip -->
             <div class="kpi-grid">
                 <div class="kpi-card" style="--kpi-accent:var(--purple);">
-                    <div class="kpi-label">Active Products Indexed</div>
-                    <div class="kpi-value" style="color:var(--purple);" id="kpiTotalSkus">0 SKUs</div>
+                    <div class="kpi-label">📦 Total Products</div>
+                    <div class="kpi-value" style="color:var(--purple);" id="kpiTotalSkus">0 Products</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--primary);">
-                    <div class="kpi-label">Total Topline Revenue</div>
+                    <div class="kpi-label">💵 Total Sales Revenue</div>
                     <div class="kpi-value" style="color:var(--primary);" id="kpiTotalRevenue">$0.00</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--info);">
-                    <div class="kpi-label">Total Purchase Cost Paid</div>
+                    <div class="kpi-label">🛒 Total Purchases</div>
                     <div class="kpi-value" style="color:var(--info);" id="kpiTotalPurchaseCost">$0.00</div>
                 </div>
+                <div class="kpi-card" id="kpiNetProfitCard" style="--kpi-accent:var(--success);">
+                    <div class="kpi-label">💰 Net Profit Earned</div>
+                    <div class="kpi-value" style="color:var(--success);" id="kpiNetProfit">$0.00</div>
+                </div>
                 <div class="kpi-card" style="--kpi-accent:var(--warning);">
-                    <div class="kpi-label">On-Hand Shelf Valuation</div>
+                    <div class="kpi-label">🏬 Current Stock Value</div>
                     <div class="kpi-value" style="color:var(--warning);" id="kpiOnHandValuation">$0.00</div>
                 </div>
-                <div class="kpi-card" id="kpiNetProfitCard" style="--kpi-accent:var(--success);">
-                    <div class="kpi-label">Realized Net Profit (FIFO Yield)</div>
-                    <div class="kpi-value" style="color:var(--success);" id="kpiNetProfit">$0.00</div>
+                <div class="kpi-card" style="--kpi-accent:var(--danger);">
+                    <div class="kpi-label">⚠️ Damaged / Lost Stock</div>
+                    <div class="kpi-value" style="color:var(--danger);" id="kpiDamagedGoods">0 Units ($0.00)</div>
                 </div>
             </div>
 
@@ -663,31 +703,31 @@
             <div id="analyticsChartsWrapper" style="display:none; margin-bottom:24px;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;" class="responsive-split-grid">
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">Financial Performance Breakdown</h3></div>
+                        <div class="card-header"><h3 class="card-title">Financial Summary (Sales vs Cost vs Profit)</h3></div>
                         <div style="position:relative; height:300px;"><canvas id="financialBarCanvas"></canvas></div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">Daily Sales Revenue Trend</h3></div>
+                        <div class="card-header"><h3 class="card-title">Daily Sales Trend</h3></div>
                         <div style="position:relative; height:300px;"><canvas id="salesTrendCanvas"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Facility Matrix Yield Breakdown -->
+            <!-- Branch Performance Summary Table -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Facility Performance Matrix</h3>
-                    <span class="badge badge-blue">FIFO Cost Tracked</span>
+                    <h3 class="card-title">Branch Sales &amp; Profit Summary</h3>
+                    <span class="badge badge-blue">Performance Breakdown</span>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Facility Node / Product Descriptor</th>
-                                <th>Volume Sold</th>
-                                <th>Topline Revenue</th>
-                                <th>Cost Basis (COGS)</th>
-                                <th>Realized Gross Yield Margin</th>
+                                <th>Branch / Product</th>
+                                <th>Units Sold</th>
+                                <th>Total Sales</th>
+                                <th>Cost of Items Sold</th>
+                                <th>Net Profit</th>
                             </tr>
                         </thead>
                         <tbody id="facilityMatrixTableBody">
@@ -697,11 +737,40 @@
                 </div>
             </div>
 
+            <!-- ⚠️ Damaged & Lost Goods Report Section -->
+            <div class="card" style="margin-top:24px; border-left:4px solid var(--danger);">
+                <div class="card-header">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:18px;">⚠️</span>
+                        <h3 class="card-title">Damaged &amp; Lost Products Report</h3>
+                    </div>
+                    <span class="badge badge-red" id="damagedLedgerCount">0 incident records</span>
+                </div>
+                <div class="table-responsive" style="max-height:420px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Branch</th>
+                                <th>Product</th>
+                                <th>Quantity Lost</th>
+                                <th>Reason / Incident Details</th>
+                                <th>Reported By</th>
+                                <th>Estimated Loss</th>
+                            </tr>
+                        </thead>
+                        <tbody id="damagedLedgerTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Split Ledger: Stock In & Stock Out -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;" class="responsive-split-grid">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;" class="responsive-split-grid">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Stock Inward Purchase Ledger</h3>
+                        <h3 class="card-title">📥 Stock In History (Purchases)</h3>
                         <span class="badge badge-blue" id="inboundLedgerCount">0 entries</span>
                     </div>
                     <div class="table-responsive" style="max-height:400px;">
@@ -709,10 +778,10 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Facility</th>
+                                    <th>Branch</th>
                                     <th>Product</th>
-                                    <th>Inbound Qty</th>
-                                    <th>Cost Paid</th>
+                                    <th>Quantity In</th>
+                                    <th>Purchase Cost</th>
                                 </tr>
                             </thead>
                             <tbody id="inboundLedgerTableBody"></tbody>
@@ -722,7 +791,7 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Stock Outward Sales Ledger</h3>
+                        <h3 class="card-title">📤 Stock Out History (Sales)</h3>
                         <span class="badge badge-emerald" id="outboundLedgerCount">0 entries</span>
                     </div>
                     <div class="table-responsive" style="max-height:400px;">
@@ -730,10 +799,10 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Facility</th>
+                                    <th>Branch</th>
                                     <th>Product</th>
-                                    <th>Dispatched Qty</th>
-                                    <th>Sold Total</th>
+                                    <th>Quantity Sold</th>
+                                    <th>Sale Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="outboundLedgerTableBody"></tbody>
@@ -745,17 +814,17 @@
             <!-- Remaining Stock on Shelves Table -->
             <div class="card" style="margin-top:24px;">
                 <div class="card-header">
-                    <h3 class="card-title">On-Hand Remaining Product Stock Inventory</h3>
-                    <span class="badge badge-slate">Live Balances</span>
+                    <h3 class="card-title">🏬 Current Stock on Shelves</h3>
+                    <span class="badge badge-slate">Live Inventory Balance</span>
                 </div>
                 <div class="table-responsive" style="max-height:450px;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Branch Facility</th>
-                                <th>Product Descriptor</th>
-                                <th>Remaining Balance</th>
-                                <th>Status Evaluation</th>
+                                <th>Branch</th>
+                                <th>Product</th>
+                                <th>Remaining Stock</th>
+                                <th>Stock Status</th>
                             </tr>
                         </thead>
                         <tbody id="reportsRemainingInventoryTableBody"></tbody>

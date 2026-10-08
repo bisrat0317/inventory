@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 /**
- * Executive Intelligence Reporting Controller with Realtime FIFO Valuation
+ * Simplified & Clear Executive Business Reports Controller
  */
 async function getExecutiveReports(req, res, next) {
     try {
@@ -12,40 +12,52 @@ async function getExecutiveReports(req, res, next) {
         // 1. Formulate date filters
         let dateConditionIn = "1=1";
         let dateConditionOut = "1=1";
+        let dateConditionDamaged = "1=1";
         const paramsIn = [];
         const paramsOut = [];
+        const paramsDamaged = [];
         let pIdxIn = 1;
         let pIdxOut = 1;
+        let pIdxDamaged = 1;
 
         if (filterRange === 'today') {
             dateConditionIn = `si.date = CURRENT_DATE`;
             dateConditionOut = `so.date = CURRENT_DATE`;
+            dateConditionDamaged = `ds.date = CURRENT_DATE`;
         } else if (filterRange === 'weekly') {
             dateConditionIn = `EXTRACT(WEEK FROM si.date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM si.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
             dateConditionOut = `EXTRACT(WEEK FROM so.date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM so.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
+            dateConditionDamaged = `EXTRACT(WEEK FROM ds.date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ds.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
         } else if (filterRange === 'monthly') {
             dateConditionIn = `EXTRACT(MONTH FROM si.date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM si.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
             dateConditionOut = `EXTRACT(MONTH FROM so.date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM so.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
+            dateConditionDamaged = `EXTRACT(MONTH FROM ds.date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ds.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
         } else if (filterRange === 'yearly') {
             dateConditionIn = `EXTRACT(YEAR FROM si.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
             dateConditionOut = `EXTRACT(YEAR FROM so.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
+            dateConditionDamaged = `EXTRACT(YEAR FROM ds.date) = EXTRACT(YEAR FROM CURRENT_DATE)`;
         } else if (filterRange === 'custom' && start_date) {
             if (end_date) {
                 dateConditionIn = `si.date BETWEEN $${pIdxIn++} AND $${pIdxIn++}`;
                 paramsIn.push(start_date, end_date);
                 dateConditionOut = `so.date BETWEEN $${pIdxOut++} AND $${pIdxOut++}`;
                 paramsOut.push(start_date, end_date);
+                dateConditionDamaged = `ds.date BETWEEN $${pIdxDamaged++} AND $${pIdxDamaged++}`;
+                paramsDamaged.push(start_date, end_date);
             } else {
                 dateConditionIn = `si.date = $${pIdxIn++}`;
                 paramsIn.push(start_date);
                 dateConditionOut = `so.date = $${pIdxOut++}`;
                 paramsOut.push(start_date);
+                dateConditionDamaged = `ds.date = $${pIdxDamaged++}`;
+                paramsDamaged.push(start_date);
             }
         }
 
         // 2. Formulate branch filter
         let branchConditionIn = "1=1";
         let branchConditionOut = "1=1";
+        let branchConditionDamaged = "1=1";
         let branchConditionInv = "1=1";
         const invParams = [];
 
@@ -55,6 +67,8 @@ async function getExecutiveReports(req, res, next) {
             paramsIn.push(bId);
             branchConditionOut = `so.branch_id = $${pIdxOut++}`;
             paramsOut.push(bId);
+            branchConditionDamaged = `ds.branch_id = $${pIdxDamaged++}`;
+            paramsDamaged.push(bId);
             branchConditionInv = `bi.branch_id = $1`;
             invParams.push(bId);
         }
@@ -93,8 +107,23 @@ async function getExecutiveReports(req, res, next) {
         `;
         const stockOutRes = await db.query(stockOutQuery, paramsOut);
 
-        // 7. FIFO ENGINE & METRICS CALCULATION
+        // 7. Query Damaged Stock records
+        const damagedQuery = `
+            SELECT ds.id, ds.date, ds.branch_id, ds.product_id, ds.quantity, ds.input_quantity,
+                   ds.reason, ds.reported_by, ds.created_at,
+                   p.name AS product_name, p.brand, p.type, u.symbol, u.name AS unit_name, b.name AS branch_name
+            FROM damaged_stock ds
+            JOIN products p ON ds.product_id = p.id
+            LEFT JOIN units u ON p.unit_id = u.id
+            JOIN branches b ON ds.branch_id = b.id
+            WHERE ${dateConditionDamaged} AND ${branchConditionDamaged}
+            ORDER BY ds.date DESC, ds.id DESC
+        `;
+        const damagedRes = await db.query(damagedQuery, paramsDamaged);
+
+        // 8. Calculations & FIFO Allocation
         const fifoQueues = {};
+        const unitCostsMap = {};
         let totalPurchaseCost = 0;
         const branchMetrics = {};
         const trendData = {};
@@ -118,6 +147,7 @@ async function getExecutiveReports(req, res, next) {
             const prodKey = `${row.brand} ${row.product_name}`;
             const qtyIn = parseFloat(row.quantity);
             const unitCost = qtyIn > 0 ? (purchaseTotal / qtyIn) : 0;
+            unitCostsMap[prodKey] = unitCost;
 
             if (branchMetrics[row.branch_id]) {
                 branchMetrics[row.branch_id].purchase_cost += purchaseTotal;
@@ -179,7 +209,7 @@ async function getExecutiveReports(req, res, next) {
                 branchMetrics[row.branch_id].products[prodKey].total_revenue += saleRevenue;
             }
 
-            // Drain FIFO batches
+            // Drain FIFO batches for sold items
             if (fifoQueues[prodKey] && fifoQueues[prodKey].length > 0) {
                 let remainingToDeduct = qtySold;
                 while (remainingToDeduct > 0 && fifoQueues[prodKey].length > 0) {
@@ -202,11 +232,31 @@ async function getExecutiveReports(req, res, next) {
                 branchMetrics[row.branch_id].products[prodKey].total_cogs += calculatedCogs;
             }
 
-            // Trend chart points
+            // Trend chart data
             const dateStr = row.date.toISOString ? row.date.toISOString().split('T')[0] : String(row.date);
             trendData[dateStr] = (trendData[dateStr] || 0) + saleRevenue;
 
             outboundRecords.push(row);
+        });
+
+        // Calculate Damaged summary & estimated financial loss
+        let totalDamagedUnits = 0;
+        let totalDamagedEstimatedLoss = 0;
+        const damagedRecords = [];
+
+        damagedRes.rows.forEach(d => {
+            const dQty = parseFloat(d.quantity || 0);
+            totalDamagedUnits += dQty;
+
+            const prodKey = `${d.brand} ${d.product_name}`;
+            const unitCost = unitCostsMap[prodKey] || 0;
+            const itemLoss = dQty * unitCost;
+            totalDamagedEstimatedLoss += itemLoss;
+
+            damagedRecords.push({
+                ...d,
+                estimated_loss: itemLoss
+            });
         });
 
         // Compute on-hand valuation from remaining FIFO batches
@@ -219,7 +269,7 @@ async function getExecutiveReports(req, res, next) {
 
         const netRealizedProfit = totalRevenue - totalCogs;
 
-        // 8. Low Stock Items (based on product min_stock_alert)
+        // 9. Low Stock Items (based on product min_stock_alert)
         const lowStockQuery = `
             SELECT b.name AS branch_name, p.name AS product_name, p.brand, bi.quantity, u.symbol,
                    COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
@@ -232,7 +282,7 @@ async function getExecutiveReports(req, res, next) {
         `;
         const lowStockRes = await db.query(lowStockQuery, invParams);
 
-        // 9. Remaining Product Stock Inventory table
+        // 10. Remaining Product Stock Inventory table
         const remainingStockQuery = `
             SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name, bi.quantity,
                    COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
@@ -259,13 +309,16 @@ async function getExecutiveReports(req, res, next) {
                 totalPurchaseCost: parseFloat(totalPurchaseCost.toFixed(2)),
                 onHandAssetValuation: parseFloat(onHandAssetValuation.toFixed(2)),
                 netRealizedProfit: parseFloat(netRealizedProfit.toFixed(2)),
-                totalCogs: parseFloat(totalCogs.toFixed(2))
+                totalCogs: parseFloat(totalCogs.toFixed(2)),
+                totalDamagedUnits: parseFloat(totalDamagedUnits.toFixed(2)),
+                totalDamagedLoss: parseFloat(totalDamagedEstimatedLoss.toFixed(2))
             },
             branchMetrics: branchMetrics,
             salesTrend: trendData,
             trendData: trendData,
             inboundLedger: inboundRecords.reverse(),
             outboundLedger: outboundRecords.reverse(),
+            damagedLedger: damagedRecords,
             lowStockAlerts: lowStockRes.rows,
             remainingInventory: remainingStockRes.rows,
             onHandInventory: remainingStockRes.rows,
@@ -282,13 +335,9 @@ async function getExecutiveReports(req, res, next) {
  */
 async function getPurchasingManifestData(req, res, next) {
     try {
-        // Products
         const productsRes = await db.query('SELECT id, name, brand FROM products WHERE is_deleted = 0 ORDER BY brand ASC, name ASC');
-
-        // Branches
         const branchesRes = await db.query('SELECT id, name FROM branches ORDER BY name ASC');
 
-        // Low stock items (based on min_stock_alert)
         const lowStockQuery = `
             SELECT bi.branch_id, bi.product_id, bi.quantity AS current_stock,
                    b.name AS branch_name, p.name AS product_name, p.brand, u.symbol,

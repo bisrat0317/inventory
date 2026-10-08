@@ -1,10 +1,27 @@
 /**
- * StockMatrix - Executive Intelligence & Reporting Module
+ * StockMatrix - Clear & Simple Business Reports & Insights Module
  */
 
 let financialBarChartInstance = null;
 let salesTrendChartInstance = null;
 let reportsDataCache = null;
+
+/**
+ * Toggle Simple Explanation Guide
+ */
+function toggleReportGuide() {
+    const content = document.getElementById('reportGuideContent');
+    const icon = document.getElementById('guideToggleIcon');
+    if (!content) return;
+
+    if (content.style.display === 'none' || !content.style.display) {
+        content.style.display = 'block';
+        if (icon) icon.textContent = '▲ Click to hide';
+    } else {
+        content.style.display = 'none';
+        if (icon) icon.textContent = '▼ Click to show/hide';
+    }
+}
 
 /**
  * Handle timeline range change
@@ -53,7 +70,7 @@ async function loadExecutiveReports() {
         }
 
         const res = await fetch(`/api/reports?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed to load executive reports.');
+        if (!res.ok) throw new Error('Failed to load reports.');
         const data = await res.json();
 
         if (data.success) {
@@ -69,6 +86,7 @@ async function loadExecutiveReports() {
 
             renderKpis(data.kpis);
             renderFacilityMatrix(data.branchMetrics);
+            renderDamagedLedger(data.damagedLedger);
             renderLedgers(data.inboundLedger, data.outboundLedger);
             renderRemainingStock(data.remainingInventory);
 
@@ -95,8 +113,9 @@ function renderKpis(kpis) {
     const costElem = document.getElementById('kpiTotalPurchaseCost');
     const valElem = document.getElementById('kpiOnHandValuation');
     const profitElem = document.getElementById('kpiNetProfit');
+    const damagedElem = document.getElementById('kpiDamagedGoods');
 
-    if (skuElem) skuElem.textContent = `${kpis.totalProductsIndexed} SKUs`;
+    if (skuElem) skuElem.textContent = `${kpis.totalProductsIndexed} Products`;
     if (revElem) revElem.textContent = formatCurrency(kpis.totalRevenue);
     if (costElem) costElem.textContent = formatCurrency(kpis.totalPurchaseCost);
     if (valElem) valElem.textContent = formatCurrency(kpis.onHandAssetValuation);
@@ -109,10 +128,16 @@ function renderKpis(kpis) {
             profitElem.style.color = 'var(--success)';
         }
     }
+
+    if (damagedElem) {
+        const dUnits = kpis.totalDamagedUnits || 0;
+        const dLoss = kpis.totalDamagedLoss || 0;
+        damagedElem.textContent = `${formatNumber(dUnits)} Units (${formatCurrency(dLoss)})`;
+    }
 }
 
 /**
- * Render Facility Matrix Table
+ * Render Branch Performance Summary Table
  */
 function renderFacilityMatrix(branchMetrics) {
     const tbody = document.getElementById('facilityMatrixTableBody');
@@ -120,7 +145,7 @@ function renderFacilityMatrix(branchMetrics) {
 
     const branches = Object.values(branchMetrics || {});
     if (branches.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">No operational facility data recorded.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">No sales or stock transactions recorded in this period.</td></tr>`;
         return;
     }
 
@@ -130,7 +155,7 @@ function renderFacilityMatrix(branchMetrics) {
         const prodKeys = Object.keys(branch.products || {});
         const branchProfit = branch.revenue - branch.cogs;
 
-        // Branch Header Row
+        // Branch Summary Header Row
         rowsHtml += `
             <tr style="background:var(--surface-hover); font-weight:700;">
                 <td style="color:var(--text-primary); font-size:14px;">
@@ -145,12 +170,12 @@ function renderFacilityMatrix(branchMetrics) {
             </tr>
         `;
 
-        // Product Subrows
+        // Individual Product Breakdown Subrows
         if (prodKeys.length === 0) {
             rowsHtml += `
                 <tr>
                     <td colspan="5" style="padding-left:36px; font-size:12.5px; color:var(--text-muted); font-style:italic;">
-                        No product dispatches or transactions recorded in this period.
+                        No product sales recorded in this branch during this period.
                     </td>
                 </tr>
             `;
@@ -168,7 +193,7 @@ function renderFacilityMatrix(branchMetrics) {
                                 ${prod.type === 1 ? 'Electronics' : 'Construction'}
                             </span>
                         </td>
-                        <td style="font-size:13px;">${formatNumber(prod.qty_sold)} ${escapeHtml(prod.symbol || '')}</td>
+                        <td style="font-size:13px;">${formatNumber(prod.qty_sold, prod.symbol)} ${escapeHtml(prod.symbol || '')}</td>
                         <td style="font-size:13px; color:var(--text-primary);">${formatCurrency(prod.total_revenue)}</td>
                         <td style="font-size:13px; color:var(--text-muted);">${formatCurrency(prod.total_cogs)}</td>
                         <td style="font-size:13px; font-weight:600; color:${prodProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">
@@ -184,45 +209,92 @@ function renderFacilityMatrix(branchMetrics) {
 }
 
 /**
+ * Render ⚠️ Damaged & Lost Products Report Table
+ */
+function renderDamagedLedger(damagedList) {
+    const tbody = document.getElementById('damagedLedgerTableBody');
+    const countBadge = document.getElementById('damagedLedgerCount');
+    if (countBadge) {
+        countBadge.textContent = `${damagedList?.length || 0} incident records`;
+    }
+
+    if (!tbody) return;
+
+    if (!damagedList || damagedList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">✅ No damaged or lost products reported in this time period.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = damagedList.map(r => {
+        const dateStr = r.date ? new Date(r.date).toISOString().split('T')[0] : '-';
+        const qty = parseFloat(r.quantity || 0);
+        const estLoss = parseFloat(r.estimated_loss || 0);
+
+        return `
+            <tr>
+                <td style="font-size:12.5px; font-family:var(--font-mono); color:var(--text-muted);">${dateStr}</td>
+                <td style="font-size:13px; font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(r.branch_name)}</td>
+                <td style="font-size:13px;">
+                    <strong>${escapeHtml(r.brand)}</strong> - ${escapeHtml(r.product_name)}
+                    <span class="badge ${r.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
+                        ${r.type === 1 ? 'Electronics' : 'Construction'}
+                    </span>
+                </td>
+                <td style="font-size:13px;">
+                    <span class="badge badge-red font-bold">
+                        -${formatNumber(qty, r.symbol)} ${escapeHtml(r.symbol || '')}
+                    </span>
+                </td>
+                <td style="font-size:13px; max-width:260px;">
+                    <span style="font-weight:500; color:var(--text-primary);">${escapeHtml(r.reason || 'Damaged')}</span>
+                </td>
+                <td style="font-size:12.5px; color:var(--text-secondary);">${escapeHtml(r.reported_by || 'Admin')}</td>
+                <td style="font-size:13px; font-weight:700; color:var(--danger);">${estLoss > 0 ? formatCurrency(estLoss) : '-'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
  * Render Split Ledgers (Stock In & Stock Out)
  */
 function renderLedgers(inbound, outbound) {
-    // Inbound
+    // Inbound (Purchases)
     const inTbody = document.getElementById('inboundLedgerTableBody');
     const inCount = document.getElementById('inboundLedgerCount');
     if (inCount) inCount.textContent = `${inbound?.length || 0} entries`;
 
     if (inTbody) {
         if (!inbound || inbound.length === 0) {
-            inTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No inbound stock recorded.</td></tr>';
+            inTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No purchases recorded in this period.</td></tr>';
         } else {
             inTbody.innerHTML = inbound.map(r => `
                 <tr>
                     <td style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
-                    <td style="font-size:13px;">${escapeHtml(r.branch_name)}</td>
+                    <td style="font-size:13px;">🏢 ${escapeHtml(r.branch_name)}</td>
                     <td style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
-                    <td style="font-size:13px;"><span class="badge badge-blue">+${formatNumber(r.quantity)} ${escapeHtml(r.symbol || '')}</span></td>
+                    <td style="font-size:13px;"><span class="badge badge-blue">+${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
                     <td style="font-size:13px; font-weight:600; color:var(--info);">${formatCurrency(r.purchase_price)}</td>
                 </tr>
             `).join('');
         }
     }
 
-    // Outbound
+    // Outbound (Sales)
     const outTbody = document.getElementById('outboundLedgerTableBody');
     const outCount = document.getElementById('outboundLedgerCount');
     if (outCount) outCount.textContent = `${outbound?.length || 0} entries`;
 
     if (outTbody) {
         if (!outbound || outbound.length === 0) {
-            outTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No sales dispatches recorded.</td></tr>';
+            outTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No sales recorded in this period.</td></tr>';
         } else {
             outTbody.innerHTML = outbound.map(r => `
                 <tr>
                     <td style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
-                    <td style="font-size:13px;">${escapeHtml(r.branch_name)}</td>
+                    <td style="font-size:13px;">🏢 ${escapeHtml(r.branch_name)}</td>
                     <td style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
-                    <td style="font-size:13px;"><span class="badge badge-emerald">-${formatNumber(r.quantity)} ${escapeHtml(r.symbol || '')}</span></td>
+                    <td style="font-size:13px;"><span class="badge badge-emerald">-${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
                     <td style="font-size:13px; font-weight:600; color:var(--success);">${formatCurrency(r.sold_price)}</td>
                 </tr>
             `).join('');
@@ -231,7 +303,7 @@ function renderLedgers(inbound, outbound) {
 }
 
 /**
- * Render Remaining Stock Inventory Table
+ * Render Remaining Stock on Shelves Table
  */
 function renderRemainingStock(items) {
     const tbody = document.getElementById('reportsRemainingInventoryTableBody');
@@ -244,12 +316,13 @@ function renderRemainingStock(items) {
 
     tbody.innerHTML = items.map(item => {
         const qty = parseFloat(item.quantity || 0);
+        const minAlert = parseFloat(item.min_stock_alert || 5);
         let evalBadge = '';
         if (qty <= 0) {
-            evalBadge = '<span class="badge badge-red font-bold">DEPLETED (0 Units)</span>';
-        } else if (qty < 5) {
-            evalBadge = '<span class="badge badge-red">CRITICAL LOW STOCK</span>';
-        } else if (qty < 20) {
+            evalBadge = '<span class="badge badge-red font-bold">OUT OF STOCK (0 Units)</span>';
+        } else if (qty <= minAlert) {
+            evalBadge = `<span class="badge badge-red">LOW STOCK (≤ ${minAlert})</span>`;
+        } else if (qty < minAlert * 3) {
             evalBadge = '<span class="badge badge-blue">OPTIMAL</span>';
         } else {
             evalBadge = '<span class="badge badge-emerald">SURPLUS</span>';
@@ -298,7 +371,7 @@ function renderReportCharts() {
     const textColor = isDark ? '#94a3b8' : '#64748b';
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
 
-    // 1. Financial Bar Chart
+    // 1. Financial Summary Bar Chart
     const barCanvas = document.getElementById('financialBarCanvas');
     if (barCanvas) {
         if (financialBarChartInstance) financialBarChartInstance.destroy();
@@ -307,9 +380,9 @@ function renderReportCharts() {
         financialBarChartInstance = new Chart(barCanvas, {
             type: 'bar',
             data: {
-                labels: ['Topline Revenue', 'Cost Basis (COGS)', 'Realized Profit'],
+                labels: ['Sales Revenue', 'Cost of Items Sold', 'Net Profit'],
                 datasets: [{
-                    label: 'USD ($)',
+                    label: 'Amount ($)',
                     data: [kpis.totalRevenue || 0, kpis.totalCogs || 0, kpis.netRealizedProfit || 0],
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.75)',
@@ -392,3 +465,7 @@ function renderReportCharts() {
 }
 
 window.renderReportCharts = renderReportCharts;
+window.toggleReportGuide = toggleReportGuide;
+window.loadExecutiveReports = loadExecutiveReports;
+window.handleReportsRangeChange = handleReportsRangeChange;
+window.toggleAnalyticsVisualizer = toggleAnalyticsVisualizer;
