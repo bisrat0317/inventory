@@ -119,7 +119,7 @@ function renderProductsList() {
                     ${canManage ? `
                         <div style="display:inline-flex; gap:6px;">
                             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditProductModal(${p.id})">Edit</button>
-                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteProduct(${p.id}, ${p.total_quantity})">Delete</button>
+                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteProduct(${p.id})">Delete</button>
                         </div>
                     ` : '<span style="color:var(--text-muted); font-size:12px;">View Only</span>'}
                 </td>
@@ -215,8 +215,8 @@ async function openCreateProductModal() {
     document.getElementById('productFormId').value = '';
     document.getElementById('productModalTitle').textContent = 'Add Product';
     document.getElementById('productFormSubmitBtn').innerHTML = '💾 Save Product';
-    document.getElementById('prodFormColorPicker').value = '#2c7be5';
-    document.getElementById('prodFormColorText').value = '#2c7be5';
+    document.getElementById('prodFormColorPicker').value = '#000000';
+    document.getElementById('prodFormColorText').value = '';
 
     await ensureUnitsLoaded();
     openModal('productModal');
@@ -240,9 +240,9 @@ async function openEditProductModal(id) {
             document.getElementById('prodFormBrand').value = p.brand;
             document.getElementById('prodFormDesc').value = p.description || '';
             
-            const color = p.color || '#2c7be5';
+            const color = p.color || '';
             document.getElementById('prodFormColorText').value = color;
-            document.getElementById('prodFormColorPicker').value = color.startsWith('#') && color.length === 7 ? color : '#2c7be5';
+            document.getElementById('prodFormColorPicker').value = (color.startsWith('#') && color.length === 7) ? color : '#000000';
 
             document.getElementById('prodFormUnit').value = p.unit_id;
             document.getElementById('productModalTitle').textContent = `Edit Product: ${p.name}`;
@@ -263,13 +263,15 @@ async function handleProductFormSubmit(e) {
     const id = document.getElementById('productFormId').value;
     const isEdit = Boolean(id);
 
+    const colorVal = document.getElementById('prodFormColorText').value.trim();
+
     const payload = {
         name: document.getElementById('prodFormName').value.trim(),
         type: parseInt(document.getElementById('prodFormType').value, 10),
         brand: document.getElementById('prodFormBrand').value.trim(),
         unit_id: parseInt(document.getElementById('prodFormUnit').value, 10),
         description: document.getElementById('prodFormDesc').value.trim(),
-        color: document.getElementById('prodFormColorText').value.trim()
+        color: colorVal || null
     };
 
     try {
@@ -298,30 +300,20 @@ async function handleProductFormSubmit(e) {
 /**
  * Archive / Delete Product
  */
-async function deleteProduct(id, currentStock, force = false) {
-    if (currentStock > 0 && !force) {
-        const confirmForce = confirm(
-            `⚠️ Warning: This product currently has ${currentStock} units in stock across branches.\n\nAre you sure you want to FORCE DELETE / HIDE this product?`
-        );
-        if (!confirmForce) return;
-        force = true;
-    } else if (!force) {
-        if (!confirm('Are you sure you want to delete / hide this product?')) return;
+async function deleteProduct(id) {
+    if (!confirm('Are you sure you want to delete this product?')) {
+        return;
     }
 
     try {
-        const url = force ? `/api/products/${id}?force=true` : `/api/products/${id}`;
-        const res = await fetch(url, { method: 'DELETE' });
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            if (result.requiresForce) {
-                return deleteProduct(id, result.currentStock, true);
-            }
             throw new Error(result.message || 'Delete failed.');
         }
 
-        showToast(result.message || 'Product moved to inactive list.', 'success');
+        showToast(result.message || 'Product deleted successfully.', 'success');
         loadProducts();
     } catch (err) {
         showToast(err.message, 'error');

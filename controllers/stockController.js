@@ -195,17 +195,20 @@ async function getStockOutInitData(req, res, next) {
         const selectedBranch = branchInfo.branches.find(b => b.id === selectedBranchId);
         const branchType = selectedBranch ? parseInt(selectedBranch.type, 10) : null;
 
-        // Fetch products filtered by selected branch category
+        // Fetch products filtered by selected branch category with live branch_quantity
         let prodSql = `
             SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id,
-                   u.name AS unit_name, u.symbol AS unit_symbol
+                   u.name AS unit_name, u.symbol AS unit_symbol,
+                   COALESCE(bi.quantity, 0)::numeric(12, 2) AS branch_quantity
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
+            LEFT JOIN branch_inventory bi ON p.id = bi.product_id AND bi.branch_id = $1
             WHERE p.is_deleted = 0
         `;
-        const prodParams = [];
+        const prodParams = [selectedBranchId];
+        let pIdx = 2;
         if (branchType) {
-            prodSql += ` AND (p.type = $1 OR p.type = 0)`;
+            prodSql += ` AND (p.type = $${pIdx++} OR p.type = 0)`;
             prodParams.push(branchType);
         }
         prodSql += ` ORDER BY p.brand ASC, p.name ASC`;

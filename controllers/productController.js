@@ -248,27 +248,8 @@ async function updateProduct(req, res, next) {
 async function deleteProduct(req, res, next) {
     try {
         const productId = parseInt(req.params.id, 10);
-        const forceDelete = req.query.force === 'true' || req.body.force === true;
-
         if (!productId) {
             return res.status(400).json({ success: false, message: 'Invalid product ID.' });
-        }
-
-        // Check active branch stock allocations
-        const stockCheck = await db.query(
-            'SELECT COALESCE(SUM(quantity), 0) AS total_qty FROM branch_inventory WHERE product_id = $1',
-            [productId]
-        );
-
-        const currentQty = parseFloat(stockCheck.rows[0]?.total_qty || 0);
-
-        if (currentQty > 0 && !forceDelete) {
-            return res.status(400).json({
-                success: false,
-                requiresForce: true,
-                currentStock: currentQty,
-                message: `Cannot archive asset containing unexhausted branch stock allocations (${currentQty} units on hand). Toggle 'Force Archive' to override.`
-            });
         }
 
         const updateRes = await db.query(
@@ -282,7 +263,7 @@ async function deleteProduct(req, res, next) {
 
         return res.json({
             success: true,
-            message: `Catalog product '${updateRes.rows[0].name}' successfully moved to archival records.`
+            message: `Product '${updateRes.rows[0].name}' deleted successfully.`
         });
     } catch (err) {
         next(err);

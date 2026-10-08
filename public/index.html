@@ -384,6 +384,10 @@
                                 </div>
                             </div>
                             <input type="hidden" id="stockOutProductId" required>
+                            <div id="stockOutAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px;">
+                                <span style="color:var(--text-secondary);">Available on Shelf:</span>
+                                <span id="stockOutAvailableBadge" class="badge badge-emerald">0 pcs</span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -838,7 +842,7 @@
                     <div class="form-group">
                         <label for="prodFormColor">Color (Optional)</label>
                         <div style="display:flex; gap:10px;">
-                            <input type="text" id="prodFormColorText" class="form-control" placeholder="#2c7be5" oninput="syncColorPicker(this.value)">
+                            <input type="text" id="prodFormColorText" class="form-control" placeholder="e.g. #2c7be5 or Red (optional)" oninput="syncColorPicker(this.value)">
                             <input type="color" id="prodFormColorPicker" style="width:48px; height:42px; border:1px solid var(--border-color); border-radius:6px; cursor:pointer;" oninput="syncColorText(this.value)">
                         </div>
                     </div>

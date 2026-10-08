@@ -9,20 +9,70 @@ let selectedStockOutProduct = null;
 
 /**
  * ============================================================================
+ * FORM RESET HELPERS
+ * ============================================================================
+ */
+
+function resetStockInForm() {
+    selectedStockInProduct = null;
+    const prodId = document.getElementById('stockInProductId');
+    if (prodId) prodId.value = '';
+    const trigger = document.getElementById('stockInProductTrigger');
+    if (trigger) trigger.textContent = 'Click to select product...';
+    const searchInput = document.getElementById('stockInSearchInput');
+    if (searchInput) searchInput.value = '';
+    const qty = document.getElementById('stockInQuantity');
+    if (qty) qty.value = '';
+    const price = document.getElementById('stockInPurchasePrice');
+    if (price) price.value = '';
+    const convDisplay = document.getElementById('stockInConversionDisplay');
+    if (convDisplay) convDisplay.value = '';
+    const convFactor = document.getElementById('stockInConversionFactor');
+    if (convFactor) convFactor.value = '1';
+    const convBox = document.getElementById('stockInConversionContainer');
+    if (convBox) convBox.style.display = 'none';
+    const dateInput = document.getElementById('stockInDate');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+}
+
+function resetStockOutForm() {
+    selectedStockOutProduct = null;
+    const prodId = document.getElementById('stockOutProductId');
+    if (prodId) prodId.value = '';
+    const trigger = document.getElementById('stockOutProductTrigger');
+    if (trigger) trigger.textContent = 'Click to select product...';
+    const searchInput = document.getElementById('stockOutSearchInput');
+    if (searchInput) searchInput.value = '';
+    const qty = document.getElementById('stockOutQuantity');
+    if (qty) qty.value = '';
+    const price = document.getElementById('stockOutSoldPrice');
+    if (price) price.value = '';
+    const convDisplay = document.getElementById('stockOutConversionFactorDisplay');
+    if (convDisplay) convDisplay.value = '';
+    const convFactor = document.getElementById('stockOutConversionFactor');
+    if (convFactor) convFactor.value = '1';
+    const convBox = document.getElementById('stockOutConversionBox');
+    if (convBox) convBox.style.display = 'none';
+    const dateInput = document.getElementById('stockOutDate');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    const notice = document.getElementById('stockOutAvailableNotice');
+    if (notice) notice.style.display = 'none';
+}
+
+/**
+ * ============================================================================
  * STOCK IN VIEW LOGIC
  * ============================================================================
  */
 
-async function loadStockInView() {
+async function loadStockInView(preserveForm = false) {
     try {
+        if (!preserveForm) {
+            resetStockInForm();
+        }
+
         const branchSelect = document.getElementById('stockInBranchSelect');
         const branchId = branchSelect?.value || '';
-
-        // Default date to today
-        const dateInput = document.getElementById('stockInDate');
-        if (dateInput && !dateInput.value) {
-            dateInput.value = new Date().toISOString().split('T')[0];
-        }
 
         const res = await fetch(`/api/stock/in/init?branch_id=${branchId}`);
         if (res.status === 401) {
@@ -59,7 +109,7 @@ async function loadStockInView() {
                 unitSelect.innerHTML = AppState.units.map(u => 
                     `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.symbol)})</option>`
                 ).join('');
-                if (data.pieceUnitId) unitSelect.value = data.pieceUnitId;
+                if (data.pieceUnitId && !unitSelect.value) unitSelect.value = data.pieceUnitId;
                 updateStockInConversion();
             }
 
@@ -77,12 +127,8 @@ async function loadStockInView() {
 }
 
 function handleStockInBranchChange() {
-    selectedStockInProduct = null;
-    const prodIdInput = document.getElementById('stockInProductId');
-    if (prodIdInput) prodIdInput.value = '';
-    const prodTrigger = document.getElementById('stockInProductTrigger');
-    if (prodTrigger) prodTrigger.textContent = 'Click to select product...';
-    loadStockInView();
+    resetStockInForm();
+    loadStockInView(true);
 }
 
 function renderStockInProductOptions(products) {
@@ -99,10 +145,13 @@ function renderStockInProductOptions(products) {
             <div>
                 <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
                 <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">
-                    ${p.type === 1 ? 'Electronics Matrix' : 'Construction'}
+                    ${p.type === 1 ? 'Electronics' : 'Construction'}
                 </span>
             </div>
-            <div style="font-size:11.5px; color:var(--text-muted);">Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                ${p.color ? ` &bull; Color: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
+            </div>
         </div>
     `).join('');
 }
@@ -145,10 +194,10 @@ async function updateStockInConversion() {
     const container = document.getElementById('stockInConversionContainer');
     const qtyInput = document.getElementById('stockInQuantity');
 
-    // Adjust step and min attribute if unit is Piece / Box / Set
+    // Adjust step and min attribute if unit is integer-based
     if (qtyInput && unitId) {
         const u = (AppState.units || []).find(x => x.id == unitId);
-        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx)$/i.test((u.name || u.symbol || '').trim());
+        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx|sck|sack)$/i.test((u.name || u.symbol || '').trim());
         if (isInt) {
             qtyInput.step = '1';
             qtyInput.min = '1';
@@ -205,7 +254,7 @@ function renderStockInInventoryTable(items) {
             <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
             <td><strong>${escapeHtml(item.brand)}</strong></td>
             <td style="font-weight:600;">${escapeHtml(item.name)}</td>
-            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics Matrix' : 'Construction'}</span></td>
+            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
             <td><span class="badge ${parseFloat(item.total_quantity) <= 5 ? 'badge-red font-bold' : 'badge-slate'}">${formatNumber(item.total_quantity, unitName)} ${escapeHtml(unitName)}</span></td>
             <td>
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
@@ -248,15 +297,8 @@ async function handleStockInSubmit(e) {
 
         showToast(result.message || 'Stock received successfully!', 'success');
 
-        // Reset form inputs (preserve branch)
-        document.getElementById('stockInQuantity').value = '';
-        document.getElementById('stockInPurchasePrice').value = '';
-        document.getElementById('stockInProductId').value = '';
-        document.getElementById('stockInProductTrigger').textContent = 'Click to select product...';
-        selectedStockInProduct = null;
-
-        // Reload table
-        loadStockInView();
+        resetStockInForm();
+        loadStockInView(true);
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -269,15 +311,14 @@ async function handleStockInSubmit(e) {
  * ============================================================================
  */
 
-async function loadStockOutView() {
+async function loadStockOutView(preserveForm = false) {
     try {
+        if (!preserveForm) {
+            resetStockOutForm();
+        }
+
         const branchSelect = document.getElementById('stockOutBranchSelect');
         const branchId = branchSelect?.value || '';
-
-        const dateInput = document.getElementById('stockOutDate');
-        if (dateInput && !dateInput.value) {
-            dateInput.value = new Date().toISOString().split('T')[0];
-        }
 
         const res = await fetch(`/api/stock/out/init?branch_id=${branchId}`);
         if (res.status === 401) {
@@ -314,7 +355,7 @@ async function loadStockOutView() {
                 unitSelect.innerHTML = AppState.units.map(u => 
                     `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.symbol)})</option>`
                 ).join('');
-                if (data.pieceUnitId) unitSelect.value = data.pieceUnitId;
+                if (data.pieceUnitId && !unitSelect.value) unitSelect.value = data.pieceUnitId;
                 updateStockOutConversion();
             }
 
@@ -324,6 +365,15 @@ async function loadStockOutView() {
             if (nameDisplay) nameDisplay.textContent = branchName;
 
             renderStockOutInventoryTable(data.inventory || []);
+
+            // If a product is already selected, refresh available stock indicator
+            if (selectedStockOutProduct) {
+                const updatedProduct = stockOutProducts.find(p => p.id === selectedStockOutProduct.id);
+                if (updatedProduct) {
+                    selectedStockOutProduct = updatedProduct;
+                }
+                updateStockOutAvailableDisplay();
+            }
         }
     } catch (err) {
         console.error('Error loading stock out:', err);
@@ -332,12 +382,8 @@ async function loadStockOutView() {
 }
 
 function handleStockOutBranchChange() {
-    selectedStockOutProduct = null;
-    const prodIdInput = document.getElementById('stockOutProductId');
-    if (prodIdInput) prodIdInput.value = '';
-    const prodTrigger = document.getElementById('stockOutProductTrigger');
-    if (prodTrigger) prodTrigger.textContent = 'Click to select product...';
-    loadStockOutView();
+    resetStockOutForm();
+    loadStockOutView(true);
 }
 
 function renderStockOutProductOptions(products) {
@@ -349,17 +395,31 @@ function renderStockOutProductOptions(products) {
         return;
     }
 
-    list.innerHTML = products.map(p => `
-        <div class="search-select-option" onclick="selectStockOutProduct(${p.id})">
-            <div>
-                <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
-                <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">
-                    ${p.type === 1 ? 'Electronics Matrix' : 'Construction'}
-                </span>
+    list.innerHTML = products.map(p => {
+        const qty = parseFloat(p.branch_quantity || 0);
+        const unit = p.unit_symbol || p.unit_name || '';
+        const qtyBadge = qty <= 0 
+            ? `<span class="badge badge-red" style="font-size:10px; margin-left:6px;">Out of Stock</span>`
+            : `<span class="badge ${qty <= 5 ? 'badge-amber' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">${formatNumber(qty, unit)} ${escapeHtml(unit)} available</span>`;
+
+        return `
+            <div class="search-select-option" onclick="selectStockOutProduct(${p.id})">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
+                        <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
+                            ${p.type === 1 ? 'Electronics' : 'Construction'}
+                        </span>
+                    </div>
+                    <div>${qtyBadge}</div>
+                </div>
+                <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                    Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                    ${p.color ? ` &bull; Color: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
+                </div>
             </div>
-            <div style="font-size:11.5px; color:var(--text-muted);">Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}</div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterStockOutProducts(query) {
@@ -389,6 +449,47 @@ function selectStockOutProduct(productId) {
     if (dropdown) dropdown.classList.remove('active');
 
     updateStockOutConversion();
+    updateStockOutAvailableDisplay();
+}
+
+function updateStockOutAvailableDisplay() {
+    const notice = document.getElementById('stockOutAvailableNotice');
+    const badge = document.getElementById('stockOutAvailableBadge');
+    const qtyInput = document.getElementById('stockOutQuantity');
+    if (!notice || !badge) return;
+
+    if (!selectedStockOutProduct) {
+        notice.style.display = 'none';
+        return;
+    }
+
+    const baseQty = parseFloat(selectedStockOutProduct.branch_quantity || 0);
+    const factor = parseFloat(document.getElementById('stockOutConversionFactor')?.value || 1);
+    const unitSelect = document.getElementById('stockOutUnitSelect');
+    const selectedUnitName = unitSelect?.selectedOptions[0]?.text || selectedStockOutProduct.unit_symbol || '';
+    const baseUnitName = selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name || 'units';
+
+    const qtyInSelectedUnit = factor > 0 ? (baseQty / factor) : baseQty;
+
+    notice.style.display = 'flex';
+
+    if (baseQty <= 0) {
+        badge.className = 'badge badge-red font-bold';
+        badge.textContent = `0 ${baseUnitName} (Out of Stock in this Branch)`;
+        if (qtyInput) {
+            qtyInput.max = '0';
+        }
+    } else {
+        badge.className = baseQty <= 5 ? 'badge badge-amber font-bold' : 'badge badge-emerald font-bold';
+        if (factor !== 1) {
+            badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} base stock)`;
+        } else {
+            badge.textContent = `${formatNumber(baseQty, baseUnitName)} ${baseUnitName} available in branch`;
+        }
+        if (qtyInput) {
+            qtyInput.max = String(qtyInSelectedUnit);
+        }
+    }
 }
 
 async function updateStockOutConversion() {
@@ -398,10 +499,10 @@ async function updateStockOutConversion() {
     const container = document.getElementById('stockOutConversionBox');
     const qtyInput = document.getElementById('stockOutQuantity');
 
-    // Adjust step and min attribute if unit is Piece / Box / Set
+    // Adjust step and min attribute if unit is integer-based
     if (qtyInput && unitId) {
         const u = (AppState.units || []).find(x => x.id == unitId);
-        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx)$/i.test((u.name || u.symbol || '').trim());
+        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx|sck|sack)$/i.test((u.name || u.symbol || '').trim());
         if (isInt) {
             qtyInput.step = '1';
             qtyInput.min = '1';
@@ -419,6 +520,7 @@ async function updateStockOutConversion() {
         factorInput.value = '1';
         displayInput.value = '1.0 (Direct Base Unit)';
         if (container) container.style.display = 'none';
+        updateStockOutAvailableDisplay();
     } else {
         try {
             const res = await fetch(`/api/stock/conversions/${selectedStockOutProduct.id}`);
@@ -429,9 +531,11 @@ async function updateStockOutConversion() {
             factorInput.value = factor;
             displayInput.value = `1 selected unit = ${factor} base (${selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name})`;
             if (container) container.style.display = 'block';
+            updateStockOutAvailableDisplay();
         } catch (err) {
             factorInput.value = '1';
             displayInput.value = '1.0';
+            updateStockOutAvailableDisplay();
         }
     }
 }
@@ -458,9 +562,9 @@ function renderStockOutInventoryTable(items) {
             <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
             <td style="font-weight:600;">${escapeHtml(item.name)}</td>
             <td><strong>${escapeHtml(item.brand)}</strong></td>
-            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics Matrix' : 'Construction'}</span></td>
+            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
             <td>${escapeHtml(unitName)}</td>
-            <td><span class="badge ${parseFloat(item.total_quantity) <= 5 ? 'badge-red font-bold' : 'badge-slate'}">${formatNumber(item.total_quantity, unitName)}</span></td>
+            <td><span class="badge ${parseFloat(item.quantity) <= 5 ? 'badge-red font-bold' : 'badge-slate'}">${formatNumber(item.quantity, unitName)}</span></td>
             <td>
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
             </td>
@@ -478,14 +582,32 @@ async function handleStockOutSubmit(e) {
         return;
     }
 
+    const branchId = parseInt(document.getElementById('stockOutBranchSelect').value, 10);
+    const quantity = parseFloat(document.getElementById('stockOutQuantity').value);
+    const unitId = parseInt(document.getElementById('stockOutUnitSelect').value, 10);
+    const factor = parseFloat(document.getElementById('stockOutConversionFactor').value || 1);
+    const soldPrice = parseFloat(document.getElementById('stockOutSoldPrice').value);
+    const date = document.getElementById('stockOutDate').value;
+
+    // Client-side available stock pre-check
+    if (selectedStockOutProduct) {
+        const availableBaseStock = parseFloat(selectedStockOutProduct.branch_quantity || 0);
+        const requestedBaseQuantity = quantity * factor;
+        if (requestedBaseQuantity > availableBaseStock) {
+            const unitLabel = selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name || 'units';
+            showToast(`Cannot dispatch: Insufficient stock! Available: ${formatNumber(availableBaseStock, unitLabel)} ${unitLabel}, Requested: ${formatNumber(requestedBaseQuantity, unitLabel)} ${unitLabel}.`, 'error');
+            return;
+        }
+    }
+
     const payload = {
-        branch_id: parseInt(document.getElementById('stockOutBranchSelect').value, 10),
+        branch_id: branchId,
         product_id: parseInt(productId, 10),
-        quantity: parseFloat(document.getElementById('stockOutQuantity').value),
-        unit_id: parseInt(document.getElementById('stockOutUnitSelect').value, 10),
-        conversion_factor: parseFloat(document.getElementById('stockOutConversionFactor').value || 1),
-        sold_price: parseFloat(document.getElementById('stockOutSoldPrice').value),
-        date: document.getElementById('stockOutDate').value
+        quantity: quantity,
+        unit_id: unitId,
+        conversion_factor: factor,
+        sold_price: soldPrice,
+        date: date
     };
 
     try {
@@ -502,15 +624,8 @@ async function handleStockOutSubmit(e) {
 
         showToast(result.message || 'Sale dispatched via FIFO successfully!', 'success');
 
-        // Reset form inputs
-        document.getElementById('stockOutQuantity').value = '';
-        document.getElementById('stockOutSoldPrice').value = '';
-        document.getElementById('stockOutProductId').value = '';
-        document.getElementById('stockOutProductTrigger').textContent = 'Click to select product...';
-        selectedStockOutProduct = null;
-
-        // Reload table
-        loadStockOutView();
+        resetStockOutForm();
+        loadStockOutView(true);
     } catch (err) {
         showToast(err.message, 'error');
     }
