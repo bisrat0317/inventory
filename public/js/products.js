@@ -99,9 +99,14 @@ function renderProductsList() {
                </div>` 
             : '<span style="color:var(--text-muted); font-size:12px;">Default</span>';
 
-        const stockBadge = parseFloat(p.total_quantity) <= 5
-            ? `<span class="badge badge-red font-bold">${formatNumber(p.total_quantity, p.unit_symbol || p.unit_name)}</span>`
-            : `<span class="badge badge-slate">${formatNumber(p.total_quantity, p.unit_symbol || p.unit_name)}</span>`;
+        const minAlert = parseFloat(p.min_stock_alert !== undefined ? p.min_stock_alert : 5);
+        const currentTotal = parseFloat(p.total_quantity || 0);
+        const isLow = currentTotal <= minAlert;
+        const unitSym = p.unit_symbol || p.unit_name || '';
+
+        const stockBadge = isLow
+            ? `<span class="badge badge-red font-bold" title="Low stock alert threshold: ${minAlert} ${unitSym}">${formatNumber(currentTotal, unitSym)} ${escapeHtml(unitSym)}</span>`
+            : `<span class="badge badge-slate">${formatNumber(currentTotal, unitSym)} ${escapeHtml(unitSym)}</span>`;
 
         return `
             <tr>
@@ -217,6 +222,7 @@ async function openCreateProductModal() {
     document.getElementById('productFormSubmitBtn').innerHTML = '💾 Save Product';
     document.getElementById('prodFormColorPicker').value = '#000000';
     document.getElementById('prodFormColorText').value = '';
+    document.getElementById('prodFormMinStock').value = '5';
 
     await ensureUnitsLoaded();
     openModal('productModal');
@@ -244,6 +250,7 @@ async function openEditProductModal(id) {
             document.getElementById('prodFormColorText').value = color;
             document.getElementById('prodFormColorPicker').value = (color.startsWith('#') && color.length === 7) ? color : '#000000';
 
+            document.getElementById('prodFormMinStock').value = p.min_stock_alert !== undefined ? p.min_stock_alert : '5';
             document.getElementById('prodFormUnit').value = p.unit_id;
             document.getElementById('productModalTitle').textContent = `Edit Product: ${p.name}`;
             document.getElementById('productFormSubmitBtn').innerHTML = '💾 Update Product';
@@ -264,6 +271,7 @@ async function handleProductFormSubmit(e) {
     const isEdit = Boolean(id);
 
     const colorVal = document.getElementById('prodFormColorText').value.trim();
+    const minStockVal = parseFloat(document.getElementById('prodFormMinStock').value);
 
     const payload = {
         name: document.getElementById('prodFormName').value.trim(),
@@ -271,7 +279,8 @@ async function handleProductFormSubmit(e) {
         brand: document.getElementById('prodFormBrand').value.trim(),
         unit_id: parseInt(document.getElementById('prodFormUnit').value, 10),
         description: document.getElementById('prodFormDesc').value.trim(),
-        color: colorVal || null
+        color: colorVal || null,
+        min_stock_alert: isNaN(minStockVal) || minStockVal < 0 ? 5.0 : minStockVal
     };
 
     try {

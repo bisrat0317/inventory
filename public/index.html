@@ -854,6 +854,11 @@
                             <input type="color" id="prodFormColorPicker" style="width:48px; height:42px; border:1px solid var(--border-color); border-radius:6px; cursor:pointer;" oninput="syncColorText(this.value)">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="prodFormMinStock">Low Stock Alert Threshold (in Base Units)</label>
+                        <input type="number" step="any" min="0" id="prodFormMinStock" class="form-control" placeholder="5 (e.g. 500 for kg, 100 for meters, 5 for pcs)">
+                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Trigger low stock warnings and purchasing manifests when branch stock drops below this value.</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">✕ Cancel</button>

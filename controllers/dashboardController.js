@@ -19,7 +19,7 @@ async function getDashboardOverview(req, res, next) {
             const invRes = await db.query(`
                 SELECT 
                     COALESCE(SUM(bi.quantity), 0)::numeric(12, 2) AS total_products,
-                    COALESCE(SUM(CASE WHEN bi.quantity < 5 THEN 1 ELSE 0 END), 0)::int AS low_stock
+                    COALESCE(SUM(CASE WHEN bi.quantity <= COALESCE(p.min_stock_alert, 5) THEN 1 ELSE 0 END), 0)::int AS low_stock
                 FROM branch_inventory bi
                 JOIN products p ON p.id = bi.product_id
                 WHERE bi.branch_id = $1 AND p.is_deleted = 0
@@ -131,13 +131,13 @@ async function getBranchOperationsHub(req, res, next) {
             ORDER BY so.date DESC, so.id DESC
         `, [branchId, ...dateParams]);
 
-        // 5. Low Stock (< 5 units)
+        // 5. Low Stock Alert Items
         const lowStockRes = await db.query(`
-            SELECT p.name, bi.quantity, u.symbol
+            SELECT p.name, p.brand, bi.quantity, u.symbol, COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
             FROM branch_inventory bi
             JOIN products p ON p.id = bi.product_id
             LEFT JOIN units u ON u.id = p.unit_id
-            WHERE bi.branch_id = $1 AND bi.quantity < 5 AND p.is_deleted = 0
+            WHERE bi.branch_id = $1 AND bi.quantity <= COALESCE(p.min_stock_alert, 5) AND p.is_deleted = 0
             ORDER BY bi.quantity ASC
         `, [branchId]);
 

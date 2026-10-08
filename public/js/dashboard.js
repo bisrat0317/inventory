@@ -165,8 +165,13 @@ async function renderBranchOpsView(branchId) {
             } else {
                 lowStockList.innerHTML = data.lowStockAlerts.map(alert => `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:var(--radius-md); font-size:13.5px;">
-                        <span style="font-weight:600; color:var(--text-primary);">${escapeHtml(alert.name)}</span>
-                        <span style="color:var(--danger); font-weight:700;">${formatQuantity(alert.quantity)} ${escapeHtml(alert.symbol || '')}</span>
+                        <div>
+                            <span style="font-weight:600; color:var(--text-primary);">${escapeHtml(alert.brand ? alert.brand + ' - ' : '')}${escapeHtml(alert.name)}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="color:var(--danger); font-weight:700;">${formatQuantity(alert.quantity)} ${escapeHtml(alert.symbol || '')}</span>
+                            <div style="font-size:11px; color:var(--text-muted);">Threshold: &le; ${alert.min_stock_alert || 5} ${escapeHtml(alert.symbol || '')}</div>
+                        </div>
                     </div>
                 `).join('');
             }

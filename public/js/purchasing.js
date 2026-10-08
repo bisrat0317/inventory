@@ -131,7 +131,7 @@ function renderPurchasingLowStockScanner(alerts) {
     if (!container) return;
 
     if (alerts.length === 0) {
-        container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">✅ All facility branch inventories are within safe operating capacity (&ge; 5 units).</div>';
+        container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">✅ All facility branch inventories are within safe operating capacity.</div>';
         return;
     }
 
@@ -142,7 +142,8 @@ function renderPurchasingLowStockScanner(alerts) {
                     ${escapeHtml(item.brand)} - ${escapeHtml(item.product_name)}
                 </div>
                 <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
-                    🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(item.quantity, item.symbol)} ${escapeHtml(item.symbol || 'units')} left</span>
+                    🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(item.quantity || item.current_stock, item.symbol)} ${escapeHtml(item.symbol || 'units')} left</span>
+                    <span style="color:var(--text-muted); font-size:11px;">(Alert &le; ${item.min_stock_alert || 5} ${escapeHtml(item.symbol || '')})</span>
                 </div>
             </div>
             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addLowStockToPurchasing('${escapeHtml(item.brand)}', '${escapeHtml(item.product_name)}', '${escapeHtml(item.branch_name)}')">

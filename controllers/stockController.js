@@ -21,7 +21,7 @@ async function getStockInInitData(req, res, next) {
 
         // Fetch products filtered by selected branch category
         let prodSql = `
-            SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id,
+            SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id, p.min_stock_alert,
                    u.name AS unit_name, u.symbol AS unit_symbol
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
@@ -197,7 +197,7 @@ async function getStockOutInitData(req, res, next) {
 
         // Fetch products filtered by selected branch category with live branch_quantity
         let prodSql = `
-            SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id,
+            SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id, p.min_stock_alert,
                    u.name AS unit_name, u.symbol AS unit_symbol,
                    COALESCE(bi.quantity, 0)::numeric(12, 2) AS branch_quantity
             FROM products p

@@ -219,21 +219,23 @@ async function getExecutiveReports(req, res, next) {
 
         const netRealizedProfit = totalRevenue - totalCogs;
 
-        // 8. Low Stock Items (< 5 units)
+        // 8. Low Stock Items (based on product min_stock_alert)
         const lowStockQuery = `
-            SELECT b.name AS branch_name, p.name AS product_name, p.brand, bi.quantity, u.symbol
+            SELECT b.name AS branch_name, p.name AS product_name, p.brand, bi.quantity, u.symbol,
+                   COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
             FROM branch_inventory bi
             JOIN products p ON bi.product_id = p.id
             LEFT JOIN units u ON p.unit_id = u.id
             JOIN branches b ON bi.branch_id = b.id
-            WHERE bi.quantity < 5 AND p.is_deleted = 0 AND ${branchConditionInv}
+            WHERE bi.quantity <= COALESCE(p.min_stock_alert, 5) AND p.is_deleted = 0 AND ${branchConditionInv}
             ORDER BY b.name, p.name
         `;
         const lowStockRes = await db.query(lowStockQuery, invParams);
 
         // 9. Remaining Product Stock Inventory table
         const remainingStockQuery = `
-            SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name, bi.quantity
+            SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name, bi.quantity,
+                   COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
             FROM branch_inventory bi
             JOIN products p ON bi.product_id = p.id
             LEFT JOIN units u ON p.unit_id = u.id
@@ -286,15 +288,16 @@ async function getPurchasingManifestData(req, res, next) {
         // Branches
         const branchesRes = await db.query('SELECT id, name FROM branches ORDER BY name ASC');
 
-        // Low stock items (< 5 units)
+        // Low stock items (based on min_stock_alert)
         const lowStockQuery = `
             SELECT bi.branch_id, bi.product_id, bi.quantity AS current_stock,
-                   b.name AS branch_name, p.name AS product_name, p.brand, u.symbol
+                   b.name AS branch_name, p.name AS product_name, p.brand, u.symbol,
+                   COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
             FROM branch_inventory bi
             JOIN branches b ON b.id = bi.branch_id
             JOIN products p ON p.id = bi.product_id
             LEFT JOIN units u ON u.id = p.unit_id
-            WHERE bi.quantity < 5 AND p.is_deleted = 0
+            WHERE bi.quantity <= COALESCE(p.min_stock_alert, 5) AND p.is_deleted = 0
             ORDER BY b.name ASC, p.name ASC
         `;
         const lowStockRes = await db.query(lowStockQuery);

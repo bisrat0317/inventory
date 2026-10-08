@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS products (
     unit_id INT REFERENCES units (id) ON DELETE SET NULL,
     description TEXT,
     color VARCHAR(50),
+    min_stock_alert NUMERIC(12, 2) NOT NULL DEFAULT 5.0,
     is_deleted INT NOT NULL DEFAULT 0, -- 0: Active, 1: Soft-deleted/Archived
     created_at TIMESTAMP
     WITH

@@ -61,6 +61,7 @@ async function getProducts(req, res, next) {
                 p.type, 
                 p.brand, 
                 p.color, 
+                p.min_stock_alert,
                 p.description,
                 p.unit_id,
                 p.is_deleted,
@@ -144,7 +145,7 @@ async function getUnits(req, res, next) {
  */
 async function createProduct(req, res, next) {
     try {
-        const { name, type, brand, unit_id, description, color } = req.body;
+        const { name, type, brand, unit_id, description, color, min_stock_alert } = req.body;
 
         if (!name || !brand || !unit_id) {
             return res.status(400).json({ success: false, message: 'Name, brand, and unit are required fields.' });
@@ -164,16 +165,17 @@ async function createProduct(req, res, next) {
         }
 
         const insertRes = await db.query(
-            `INSERT INTO products (name, type, brand, unit_id, description, color) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
-             RETURNING id, name, brand, type`,
+            `INSERT INTO products (name, type, brand, unit_id, description, color, min_stock_alert) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
+             RETURNING id, name, brand, type, min_stock_alert`,
             [
                 name.trim(),
                 parseInt(type, 10) || 1,
                 brand.trim(),
                 parseInt(unit_id, 10),
                 description ? description.trim() : null,
-                color ? color.trim() : null
+                color ? color.trim() : null,
+                parseFloat(min_stock_alert) || 5.0
             ]
         );
 
@@ -193,7 +195,7 @@ async function createProduct(req, res, next) {
 async function updateProduct(req, res, next) {
     try {
         const productId = parseInt(req.params.id, 10);
-        const { name, type, brand, unit_id, description, color } = req.body;
+        const { name, type, brand, unit_id, description, color, min_stock_alert } = req.body;
 
         if (!productId || !name || !brand || !unit_id) {
             return res.status(400).json({ success: false, message: 'Valid product ID, name, brand, and unit are required.' });
@@ -214,9 +216,9 @@ async function updateProduct(req, res, next) {
 
         const updateRes = await db.query(
             `UPDATE products 
-             SET name = $1, type = $2, brand = $3, unit_id = $4, description = $5, color = $6 
-             WHERE id = $7 
-             RETURNING id, name, brand, type`,
+             SET name = $1, type = $2, brand = $3, unit_id = $4, description = $5, color = $6, min_stock_alert = $7 
+             WHERE id = $8 
+             RETURNING id, name, brand, type, min_stock_alert`,
             [
                 name.trim(),
                 parseInt(type, 10) || 1,
@@ -224,6 +226,7 @@ async function updateProduct(req, res, next) {
                 parseInt(unit_id, 10),
                 description ? description.trim() : null,
                 color ? color.trim() : null,
+                parseFloat(min_stock_alert) || 5.0,
                 productId
             ]
         );

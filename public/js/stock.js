@@ -466,9 +466,10 @@ function renderStockOutProductOptions(products) {
     list.innerHTML = products.map(p => {
         const qty = parseFloat(p.branch_quantity || 0);
         const unit = p.unit_symbol || p.unit_name || '';
+        const minAlert = parseFloat(p.min_stock_alert !== undefined ? p.min_stock_alert : 5);
         const qtyBadge = qty <= 0 
             ? `<span class="badge badge-red" style="font-size:10px; margin-left:6px;">Out of Stock</span>`
-            : `<span class="badge ${qty <= 5 ? 'badge-amber' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">${formatNumber(qty, unit)} ${escapeHtml(unit)} available</span>`;
+            : `<span class="badge ${qty <= minAlert ? 'badge-amber font-bold' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">${formatNumber(qty, unit)} ${escapeHtml(unit)} available</span>`;
 
         return `
             <div class="search-select-option" onclick="selectStockOutProduct(${p.id})">
@@ -549,7 +550,8 @@ function updateStockOutAvailableDisplay() {
             qtyInput.max = '0';
         }
     } else {
-        badge.className = baseQty <= 5 ? 'badge badge-amber font-bold' : 'badge badge-emerald font-bold';
+        const minAlert = parseFloat(selectedStockOutProduct.min_stock_alert !== undefined ? selectedStockOutProduct.min_stock_alert : 5);
+        badge.className = baseQty <= minAlert ? 'badge badge-amber font-bold' : 'badge badge-emerald font-bold';
         if (factor !== 1 && factor > 0) {
             badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} ${selectedUnitName} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} in shelf stock)`;
         } else {
