@@ -1,0 +1,123 @@
+/* ==========================================================================
+   A4 PRINT SHEET STYLESHEET - StockMatrix Manifest Print Engine
+   ========================================================================== */
+@page {
+    size: A4 portrait;
+    margin: 12mm 10mm;
+}
+
+@media print {
+    /* Hide all interactive UI and non-printable elements */
+    header, nav, .app-header, .mobile-drawer, .mobile-drawer-overlay, 
+    .no-print, .btn, .filter-bar, .toast-container, .modal-backdrop,
+    th.action-column, td.action-column, .card-header, .badge-purple {
+        display: none !important;
+    }
+
+    /* Page container setup */
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 10.5pt;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .app-main, .app-view {
+        display: block !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .responsive-split-grid {
+        display: block !important;
+        width: 100% !important;
+        grid-template-columns: none !important;
+        gap: 0 !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        width: 100% !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    /* Print Header */
+    .print-only-header {
+        display: block !important;
+        border-bottom: 2.5px solid #111827;
+        padding-bottom: 10px;
+        margin-bottom: 16px;
+    }
+
+    .print-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .print-title {
+        font-size: 17pt;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #000000;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .print-meta {
+        font-size: 9.5pt;
+        font-weight: 600;
+        color: #4b5563;
+    }
+
+    /* Table & Borders */
+    table, #purchasingTableSheet {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        border: 1.5px solid #000000 !important;
+        font-size: 9.5pt !important;
+        line-height: 1.3 !important;
+        margin-top: 4px;
+    }
+
+    th {
+        background: #f3f4f6 !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+        padding: 6px 8px !important;
+        font-weight: 700 !important;
+        text-align: left;
+    }
+
+    td {
+        border: 1px solid #000000 !important;
+        padding: 6px 8px !important;
+        color: #000000 !important;
+        vertical-align: middle;
+    }
+
+    /* Highlight price and remark blank write-in slots */
+    td:nth-child(7), td:nth-child(8) {
+        min-width: 65px;
+        background-color: #fafafa !important;
+    }
+
+    tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+}
