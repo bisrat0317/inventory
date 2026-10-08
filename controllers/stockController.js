@@ -440,10 +440,236 @@ async function getProductConversions(req, res, next) {
     }
 }
 
+/**
+ * Handle Damaged / Lost Stock Registration and Shelf Deduction
+ */
+async function recordDamagedStock(req, res, next) {
+    const client = await db.getClient();
+    try {
+        const user = req.session.user;
+        const branchInfo = await getUserAssignedBranches(user);
+
+        const {
+            branch_id,
+            product_id,
+            unit_id,
+            quantity,
+            conversion_factor,
+            reason,
+            date
+        } = req.body;
+
+        const targetBranchId = parseInt(branch_id, 10);
+        const targetProductId = parseInt(product_id, 10);
+        const targetUnitId = parseInt(unit_id, 10) || null;
+        const inputQuantity = parseFloat(quantity);
+        const damageReason = (reason || 'Damaged goods').trim();
+        const entryDate = date || new Date().toISOString().split('T')[0];
+        let factor = parseFloat(conversion_factor) || 1.0;
+        if (factor <= 0) factor = 1.0;
+
+        if (!targetBranchId || !targetProductId || isNaN(inputQuantity) || inputQuantity <= 0) {
+            return res.status(400).json({ success: false, message: 'Please provide valid branch, product, and positive damaged quantity.' });
+        }
+
+        // Security authorization check
+        if (!branchInfo.isAdmin && !branchInfo.branchIds.includes(targetBranchId)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized: You are not assigned to this branch.' });
+        }
+
+        const quantityInBase = inputQuantity * factor;
+
+        // Check available on-hand balance in branch_inventory
+        const invCheck = await client.query(
+            'SELECT COALESCE(quantity, 0) AS available FROM branch_inventory WHERE branch_id = $1 AND product_id = $2',
+            [targetBranchId, targetProductId]
+        );
+        const availableStock = parseFloat(invCheck.rows[0]?.available || 0);
+
+        if (quantityInBase > availableStock) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot subtract damaged stock: Insufficient balance! Available on-hand: ${availableStock.toFixed(2)}, Attempted damage deduction: ${quantityInBase.toFixed(2)}.`
+            });
+        }
+
+        await client.query('BEGIN');
+
+        // 1. Insert into damaged_stock table
+        const insertDamagedQuery = `
+            INSERT INTO damaged_stock (
+                branch_id, product_id, quantity, unit_id, conversion_factor, input_quantity, reason, date, reported_by
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id
+        `;
+        const damagedRes = await client.query(insertDamagedQuery, [
+            targetBranchId,
+            targetProductId,
+            quantityInBase,
+            targetUnitId,
+            factor,
+            inputQuantity,
+            damageReason,
+            entryDate,
+            user.username || 'staff'
+        ]);
+
+        // 2. FIFO batch deduction from remaining stock_in batches
+        let quantityToAllocate = quantityInBase;
+        const batchesRes = await client.query(`
+            SELECT id, quantity_remaining 
+            FROM stock_in 
+            WHERE branch_id = $1 AND product_id = $2 AND quantity_remaining > 0 
+            ORDER BY date ASC, id ASC
+        `, [targetBranchId, targetProductId]);
+
+        for (const batch of batchesRes.rows) {
+            if (quantityToAllocate <= 0) break;
+
+            const batchId = batch.id;
+            const batchRemaining = parseFloat(batch.quantity_remaining);
+            let newRemaining = 0;
+
+            if (batchRemaining >= quantityToAllocate) {
+                newRemaining = batchRemaining - quantityToAllocate;
+                quantityToAllocate = 0;
+            } else {
+                newRemaining = 0;
+                quantityToAllocate -= batchRemaining;
+            }
+
+            await client.query('UPDATE stock_in SET quantity_remaining = $1 WHERE id = $2', [newRemaining, batchId]);
+        }
+
+        // 3. Decrement live balance in branch_inventory
+        await client.query(
+            'UPDATE branch_inventory SET quantity = quantity - $1 WHERE branch_id = $2 AND product_id = $3',
+            [quantityInBase, targetBranchId, targetProductId]
+        );
+
+        await client.query('COMMIT');
+
+        return res.status(201).json({
+            success: true,
+            message: `Damaged stock (${quantityInBase.toFixed(2)} base units) recorded and subtracted from branch inventory shelf balance.`,
+            damagedId: damagedRes.rows[0].id
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        next(err);
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Get Damaged Stock Records (with optional branch & date filter)
+ */
+async function getDamagedStock(req, res, next) {
+    try {
+        const user = req.session.user;
+        const branchInfo = await getUserAssignedBranches(user);
+        const { branch_id, start_date, end_date } = req.query;
+
+        let branchFilter = "1=1";
+        const params = [];
+        let pIdx = 1;
+
+        if (branch_id && branch_id !== 'all') {
+            branchFilter = `ds.branch_id = $${pIdx++}`;
+            params.push(parseInt(branch_id, 10));
+        } else if (!branchInfo.isAdmin && branchInfo.branchIds.length > 0) {
+            branchFilter = `ds.branch_id = ANY($${pIdx++}::int[])`;
+            params.push(branchInfo.branchIds);
+        }
+
+        let dateFilter = "1=1";
+        if (start_date) {
+            if (end_date) {
+                dateFilter = `ds.date BETWEEN $${pIdx++} AND $${pIdx++}`;
+                params.push(start_date, end_date);
+            } else {
+                dateFilter = `ds.date = $${pIdx++}`;
+                params.push(start_date);
+            }
+        }
+
+        const query = `
+            SELECT ds.id, ds.branch_id, ds.product_id, ds.quantity, ds.input_quantity,
+                   ds.conversion_factor, ds.reason, ds.date, ds.reported_by, ds.created_at,
+                   b.name AS branch_name, p.name AS product_name, p.brand, p.type,
+                   u.symbol AS unit_symbol, u.name AS unit_name
+            FROM damaged_stock ds
+            JOIN branches b ON ds.branch_id = b.id
+            JOIN products p ON ds.product_id = p.id
+            LEFT JOIN units u ON p.unit_id = u.id
+            WHERE ${branchFilter} AND ${dateFilter}
+            ORDER BY ds.date DESC, ds.id DESC
+            LIMIT 100
+        `;
+        const result = await db.query(query, params);
+
+        return res.json({
+            success: true,
+            damagedStock: result.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Delete / Restore Damaged Stock Log (admin & manager only)
+ */
+async function deleteDamagedStock(req, res, next) {
+    const client = await db.getClient();
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Invalid damaged stock ID.' });
+        }
+
+        const logRes = await client.query('SELECT * FROM damaged_stock WHERE id = $1', [id]);
+        if (logRes.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'Damaged stock record not found.' });
+        }
+        const log = logRes.rows[0];
+        const qtyToRestore = parseFloat(log.quantity);
+        const branchId = log.branch_id;
+        const productId = log.product_id;
+
+        await client.query('BEGIN');
+
+        // Restore quantity to branch_inventory
+        await client.query(
+            'UPDATE branch_inventory SET quantity = quantity + $1 WHERE branch_id = $2 AND product_id = $3',
+            [qtyToRestore, branchId, productId]
+        );
+
+        // Delete from damaged_stock
+        await client.query('DELETE FROM damaged_stock WHERE id = $1', [id]);
+
+        await client.query('COMMIT');
+
+        return res.json({
+            success: true,
+            message: 'Damaged stock record removed and quantity restored back to shelf inventory.'
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        next(err);
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     getStockInInitData,
     stockIn,
     getStockOutInitData,
     stockOut,
-    getProductConversions
+    getProductConversions,
+    recordDamagedStock,
+    getDamagedStock,
+    deleteDamagedStock
 };

@@ -16,4 +16,9 @@ router.post('/out', requireRole('admin', 'manager', 'staff'), stockController.st
 // Unit conversion rates
 router.get('/conversions/:productId', requireRole('admin', 'manager', 'staff'), stockController.getProductConversions);
 
+// Damaged stock routes
+router.post('/damaged', requireRole('admin', 'manager', 'staff'), stockController.recordDamagedStock);
+router.get('/damaged', requireRole('admin', 'manager', 'staff'), stockController.getDamagedStock);
+router.delete('/damaged/:id', requireRole('admin', 'manager'), stockController.deleteDamagedStock);
+
 module.exports = router;

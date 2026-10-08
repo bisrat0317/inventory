@@ -131,7 +131,18 @@ async function getBranchOperationsHub(req, res, next) {
             ORDER BY so.date DESC, so.id DESC
         `, [branchId, ...dateParams]);
 
-        // 5. Low Stock Alert Items
+        // 5. Damaged Stock Logs within Range
+        const damagedCondition = dateCondition.replace(/date/g, 'ds.date');
+        const damagedRes = await db.query(`
+            SELECT ds.id, p.name, p.brand, ds.quantity, ds.input_quantity, ds.reason, ds.date, ds.reported_by, u.symbol 
+            FROM damaged_stock ds
+            JOIN products p ON p.id = ds.product_id
+            LEFT JOIN units u ON u.id = p.unit_id
+            WHERE ds.branch_id = $1 AND ${damagedCondition}
+            ORDER BY ds.date DESC, ds.id DESC
+        `, [branchId, ...dateParams]);
+
+        // 6. Low Stock Alert Items
         const lowStockRes = await db.query(`
             SELECT p.name, p.brand, bi.quantity, u.symbol, COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
             FROM branch_inventory bi
@@ -149,6 +160,7 @@ async function getBranchOperationsHub(req, res, next) {
             inventory: invRes.rows,
             stockInLogs: stockInRes.rows,
             stockOutLogs: stockOutRes.rows,
+            damagedLogs: damagedRes.rows,
             lowStockAlerts: lowStockRes.rows
         });
     } catch (err) {
@@ -373,11 +385,52 @@ async function deleteStockOut(req, res, next) {
     }
 }
 
+/**
+ * Delete Damaged Stock Log (restoring quantity back to branch inventory)
+ */
+async function deleteDamagedStock(req, res, next) {
+    const client = await db.getClient();
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Invalid damaged stock ID.' });
+        }
+
+        const logRes = await client.query('SELECT * FROM damaged_stock WHERE id = $1', [id]);
+        if (logRes.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'Damaged stock record not found.' });
+        }
+        const log = logRes.rows[0];
+        const qtyToRestore = parseFloat(log.quantity);
+        const branchId = log.branch_id;
+        const productId = log.product_id;
+
+        await client.query('BEGIN');
+
+        await client.query(
+            'UPDATE branch_inventory SET quantity = quantity + $1 WHERE branch_id = $2 AND product_id = $3',
+            [qtyToRestore, branchId, productId]
+        );
+
+        await client.query('DELETE FROM damaged_stock WHERE id = $1', [id]);
+
+        await client.query('COMMIT');
+
+        return res.json({ success: true, message: 'Damaged stock log removed and items restored to shelf balance.' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        next(err);
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     getDashboardOverview,
     getBranchOperationsHub,
     editStockIn,
     deleteStockIn,
     editStockOut,
-    deleteStockOut
+    deleteStockOut,
+    deleteDamagedStock
 };

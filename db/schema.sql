@@ -112,6 +112,21 @@ CREATE TABLE IF NOT EXISTS stock_out_batches (
     quantity_allocated NUMERIC(12, 4) NOT NULL
 );
 
+-- 11. Damaged / Lost Stock (Audit and Deductions)
+CREATE TABLE IF NOT EXISTS damaged_stock (
+    id SERIAL PRIMARY KEY,
+    branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+    product_id INT NOT NULL REFERENCES products (id) ON DELETE CASCADE,
+    quantity NUMERIC(12, 4) NOT NULL,
+    unit_id INT REFERENCES units (id) ON DELETE SET NULL,
+    conversion_factor NUMERIC(12, 4) DEFAULT 1.0,
+    input_quantity NUMERIC(12, 4),
+    reason TEXT,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    reported_by VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for high performance queries
 CREATE INDEX IF NOT EXISTS idx_products_is_deleted ON products (is_deleted);
 
@@ -128,5 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_stock_in_remaining ON stock_in (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stock_out_branch_date ON stock_out (branch_id, date);
+
+CREATE INDEX IF NOT EXISTS idx_damaged_stock_branch_date ON damaged_stock (branch_id, date);
 
 CREATE INDEX IF NOT EXISTS idx_branch_inventory_qty ON branch_inventory (quantity);

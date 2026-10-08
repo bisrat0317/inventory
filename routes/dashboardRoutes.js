@@ -19,4 +19,7 @@ router.delete('/stock-in/:id', requireRole('admin', 'manager'), dashboardControl
 router.put('/stock-out/:id', requireRole('admin', 'manager'), dashboardController.editStockOut);
 router.delete('/stock-out/:id', requireRole('admin', 'manager'), dashboardController.deleteStockOut);
 
+// Delete Damaged logs (admin & manager)
+router.delete('/damaged/:id', requireRole('admin', 'manager'), dashboardController.deleteDamagedStock);
+
 module.exports = router;

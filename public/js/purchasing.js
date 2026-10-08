@@ -124,7 +124,7 @@ function selectPurchasingProduct(productId) {
 }
 
 /**
- * Render Low Stock System Scanner list (< 5 units)
+ * Render Low Stock System Scanner list (< min_stock_alert units)
  */
 function renderPurchasingLowStockScanner(alerts) {
     const container = document.getElementById('purchasingLowStockList');
@@ -135,44 +135,57 @@ function renderPurchasingLowStockScanner(alerts) {
         return;
     }
 
-    container.innerHTML = alerts.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--surface); border:1px solid var(--border-color); border-left:3px solid var(--danger); border-radius:var(--radius-md);">
-            <div>
-                <div style="font-weight:600; font-size:13.5px; color:var(--text-primary);">
-                    ${escapeHtml(item.brand)} - ${escapeHtml(item.product_name)}
+    container.innerHTML = alerts.map(item => {
+        const threshold = parseFloat(item.min_stock_alert !== undefined ? item.min_stock_alert : 5);
+        const current = parseFloat(item.quantity || item.current_stock || 0);
+        const sym = item.symbol || 'units';
+
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--surface); border:1px solid var(--border-color); border-left:3px solid var(--danger); border-radius:var(--radius-md);">
+                <div>
+                    <div style="font-weight:600; font-size:13.5px; color:var(--text-primary);">
+                        ${escapeHtml(item.brand)} - ${escapeHtml(item.product_name)}
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+                        🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(current, sym)} ${escapeHtml(sym)} left</span>
+                        <span style="color:var(--text-muted); font-size:11px;">(Min threshold: ${formatNumber(threshold, sym)} ${escapeHtml(sym)})</span>
+                    </div>
                 </div>
-                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
-                    🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(item.quantity || item.current_stock, item.symbol)} ${escapeHtml(item.symbol || 'units')} left</span>
-                    <span style="color:var(--text-muted); font-size:11px;">(Alert &le; ${item.min_stock_alert || 5} ${escapeHtml(item.symbol || '')})</span>
-                </div>
+                <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addLowStockToPurchasing('${escapeHtml(item.brand)}', '${escapeHtml(item.product_name)}', '${escapeHtml(item.branch_name)}', ${threshold}, ${current}, '${escapeHtml(sym)}')">
+                    🛒 Add to Cart
+                </button>
             </div>
-            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addLowStockToPurchasing('${escapeHtml(item.brand)}', '${escapeHtml(item.product_name)}', '${escapeHtml(item.branch_name)}')">
-                + Add to Manifest
-            </button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
- * Add Low Stock item to purchasing manifest
+ * Add Low Stock item to purchasing cart using product's configured minimum threshold
  */
-function addLowStockToPurchasing(brand, name, branchName) {
+function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentStock, unitSymbol) {
+    const threshold = parseFloat(minThreshold) || 5;
+    const current = parseFloat(currentStock) || 0;
+    const sym = unitSymbol || 'units';
+
+    // Suggest quantity equal to the configured minimum threshold (or shortage delta)
+    const suggestedQty = threshold > 0 ? threshold : 5;
+
     purchasingManifestItems.push({
         brand: brand,
         name: name,
         color: 'Standard',
         destinations: branchName,
-        qty: 15, // standard restock buffer
-        notes: 'Auto-scanned Low Stock Restock Request',
-        unit: 'units'
+        qty: suggestedQty,
+        notes: `Low Stock Alert (${formatNumber(current, sym)} left, Min alert &le; ${formatNumber(threshold, sym)} ${sym})`,
+        unit: sym
     });
 
     renderPurchasingTable();
-    showToast(`Added ${brand} - ${name} to purchasing manifest.`, 'success');
+    showToast(`Added ${brand} - ${name} (${formatNumber(suggestedQty, sym)} ${sym}) to purchasing cart.`, 'success');
 }
 
 /**
- * Add Custom Line item to purchasing manifest
+ * Add Custom Line item to purchasing manifest / cart
  */
 function handlePurchasingAddLine(e) {
     e.preventDefault();
@@ -193,6 +206,7 @@ function handlePurchasingAddLine(e) {
     const qty = parseFloat(document.getElementById('purchasingQty').value);
     const color = document.getElementById('purchasingColor').value.trim() || 'Standard';
     const notes = document.getElementById('purchasingNotes').value.trim() || '-';
+    const unit = selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || '';
 
     purchasingManifestItems.push({
         brand: selectedPurchasingProduct.brand,
@@ -201,7 +215,7 @@ function handlePurchasingAddLine(e) {
         destinations: selectedBranches.join(', '),
         qty: qty,
         notes: notes,
-        unit: selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || ''
+        unit: unit
     });
 
     // Reset form inputs
@@ -213,11 +227,56 @@ function handlePurchasingAddLine(e) {
     selectedPurchasingProduct = null;
 
     renderPurchasingTable();
-    showToast('Product line added to manifest.', 'success');
+    showToast('Product line added to purchasing cart.', 'success');
 }
 
 /**
- * Remove line item from manifest
+ * Open Modal to Edit Line item in Purchasing Cart
+ */
+function openEditPurchasingLine(index) {
+    const item = purchasingManifestItems[index];
+    if (!item) return;
+
+    document.getElementById('editPurchasingIndex').value = index;
+    document.getElementById('editPurchasingProdTitle').textContent = `${item.brand} - ${item.name}`;
+    document.getElementById('editPurchasingQty').value = item.qty;
+    document.getElementById('editPurchasingUnitDisplay').textContent = item.unit || 'units';
+    document.getElementById('editPurchasingColor').value = item.color || '';
+    document.getElementById('editPurchasingDestinations').value = item.destinations || '';
+    document.getElementById('editPurchasingNotes').value = item.notes || '';
+
+    openModal('editPurchasingModal');
+}
+
+/**
+ * Save Edited Line Item in Purchasing Cart
+ */
+function handleEditPurchasingSave(e) {
+    e.preventDefault();
+    const index = parseInt(document.getElementById('editPurchasingIndex').value, 10);
+    if (isNaN(index) || !purchasingManifestItems[index]) {
+        closeModal('editPurchasingModal');
+        return;
+    }
+
+    const newQty = parseFloat(document.getElementById('editPurchasingQty').value);
+    if (isNaN(newQty) || newQty <= 0) {
+        showToast('Please specify a positive valid quantity.', 'error');
+        return;
+    }
+
+    purchasingManifestItems[index].qty = newQty;
+    purchasingManifestItems[index].color = document.getElementById('editPurchasingColor').value.trim() || 'Standard';
+    purchasingManifestItems[index].destinations = document.getElementById('editPurchasingDestinations').value.trim() || '-';
+    purchasingManifestItems[index].notes = document.getElementById('editPurchasingNotes').value.trim() || '-';
+
+    closeModal('editPurchasingModal');
+    renderPurchasingTable();
+    showToast('Cart item updated successfully!', 'success');
+}
+
+/**
+ * Remove line item from manifest / cart
  */
 function removePurchasingLine(index) {
     purchasingManifestItems.splice(index, 1);
@@ -225,7 +284,7 @@ function removePurchasingLine(index) {
 }
 
 /**
- * Render Active Purchasing Sheet Table
+ * Render Active Purchasing Sheet Table / Cart
  */
 function renderPurchasingTable() {
     const tbody = document.getElementById('purchasingManifestTableBody');
@@ -238,7 +297,7 @@ function renderPurchasingTable() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="9" style="text-align:center; padding:36px; color:var(--text-muted);">
-                    No line items added to purchasing manifest. Add items above or scan low-stock alerts.
+                    🛒 No line items in purchasing cart. Add items or scan low-stock alerts.
                 </td>
             </tr>
         `;
@@ -251,12 +310,15 @@ function renderPurchasingTable() {
             <td style="font-weight:600;">${escapeHtml(item.name)}</td>
             <td>${escapeHtml(item.color)}</td>
             <td style="color:var(--text-secondary); font-size:13px;">${escapeHtml(item.destinations)}</td>
-            <td><strong style="color:var(--primary);">${formatNumber(item.qty, item.unit)}</strong> ${escapeHtml(item.unit || '')}</td>
+            <td><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> ${escapeHtml(item.unit || '')}</td>
             <td style="font-size:12.5px; color:var(--text-muted);">${escapeHtml(item.notes)}</td>
             <td style="border-bottom:1px dashed var(--border-color);"></td>
             <td style="border-bottom:1px dashed var(--border-color);"></td>
-            <td class="action-column" style="text-align:right;">
-                <button class="btn btn-danger-outline" style="padding:2px 8px; font-size:11px;" onclick="removePurchasingLine(${idx})" title="Remove item">
+            <td class="action-column" style="text-align:right; white-space:nowrap;">
+                <button class="btn btn-secondary" style="padding:3px 8px; font-size:11.5px; margin-right:4px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
+                    ✏️ Edit
+                </button>
+                <button class="btn btn-danger-outline" style="padding:3px 8px; font-size:11.5px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
                     ✕ Remove
                 </button>
             </td>

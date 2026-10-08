@@ -124,6 +124,7 @@ function renderProductsList() {
                     ${canManage ? `
                         <div style="display:inline-flex; gap:6px;">
                             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditProductModal(${p.id})">Edit</button>
+                            <button class="btn btn-danger-outline" style="padding:4px 8px; font-size:12px;" onclick="openDamagedStockModal(null, ${p.id})" title="Report Damaged Goods">⚠️ Damaged</button>
                             <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteProduct(${p.id})">Delete</button>
                         </div>
                     ` : '<span style="color:var(--text-muted); font-size:12px;">View Only</span>'}

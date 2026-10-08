@@ -199,7 +199,7 @@ async function renderBranchOpsView(branchId) {
             }
         }
 
-        // Render Stock Out Logs List
+        // 4. Stock Out Logs List
         const stockOutList = document.getElementById('opsStockOutList');
         if (stockOutList) {
             if (data.stockOutLogs.length === 0) {
@@ -216,6 +216,28 @@ async function renderBranchOpsView(branchId) {
                             </div>
                         </div>
                         <span style="color:var(--success); font-weight:700; font-size:13.5px;">-${formatQuantity(log.quantity)} ${escapeHtml(log.symbol || '')}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 5. Damaged Stock Logs List
+        const damagedList = document.getElementById('opsDamagedList');
+        if (damagedList) {
+            if (!data.damagedLogs || data.damagedLogs.length === 0) {
+                damagedList.innerHTML = `<div style="text-align:center; padding:18px; color:var(--text-muted); font-style:italic; font-size:13px;">No damaged items recorded for this timeframe.</div>`;
+            } else {
+                damagedList.innerHTML = data.damagedLogs.map(log => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--surface); border:1px solid var(--border-color); border-left:4px solid var(--danger); border-radius:var(--radius-md); font-size:13px;">
+                        <div>
+                            <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(log.brand ? log.brand + ' - ' : '')}${escapeHtml(log.name)}</div>
+                            <small style="color:var(--danger); font-weight:500;">Reason: ${escapeHtml(log.reason || 'Damaged')}</small>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">By: ${escapeHtml(log.reported_by || 'Staff')}</div>
+                            <div style="display:flex; gap:8px; margin-top:4px;">
+                                <a href="javascript:void(0)" style="color:var(--danger); font-size:11.5px; font-weight:600;" onclick="handleDeleteDamaged(${log.id}, ${branchId})">Delete / Restore Stock</a>
+                            </div>
+                        </div>
+                        <span style="color:var(--danger); font-weight:700; font-size:13.5px;">-${formatQuantity(log.quantity)} ${escapeHtml(log.symbol || '')}</span>
                     </div>
                 `).join('');
             }
@@ -341,6 +363,25 @@ async function handleDeleteStockOut(id, branchId) {
 
     try {
         const res = await fetch(`/api/dashboard/stock-out/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            renderBranchOpsView(branchId);
+        } else {
+            showToast(data.message || 'Deletion prevented', 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function handleDeleteDamaged(id, branchId) {
+    if (!confirm('Are you sure you want to remove this damaged stock entry? The item quantity will be restored back to shelf inventory.')) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/dashboard/damaged/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
             showToast(data.message, 'success');

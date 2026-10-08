@@ -99,9 +99,14 @@
                     <h1 id="branchOpsTitle">Branch Operations Hub</h1>
                     <p id="branchOpsSubtitle" style="display:flex; align-items:center; gap:6px;">📍 Operational Details</p>
                 </div>
-                <button class="btn btn-secondary" onclick="navigateTo('dashboard')">
-                    ← Back to Overview
-                </button>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-danger-outline" onclick="openDamagedStockModal(activeBranchOpsId)">
+                        ⚠️ Register Damaged / Lost Items
+                    </button>
+                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">
+                        ← Back to Overview
+                    </button>
+                </div>
             </div>
 
             <div class="filter-bar">
@@ -170,7 +175,7 @@
                             <h3 class="card-title">Inbound Deliveries</h3>
                             <span class="badge badge-blue">Stock In</span>
                         </div>
-                        <div id="opsStockInList" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+                        <div id="opsStockInList" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
@@ -181,7 +186,18 @@
                             <h3 class="card-title">Outbound Dispatches</h3>
                             <span class="badge badge-emerald">Sales</span>
                         </div>
-                        <div id="opsStockOutList" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+                        <div id="opsStockOutList" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Damaged Goods Activity Logs -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" style="color:var(--danger);">⚠️ Damaged / Lost Items</h3>
+                            <span class="badge badge-red">Deductions</span>
+                        </div>
+                        <div id="opsDamagedList" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
@@ -263,6 +279,9 @@
                     <h1>Stock In / Receiving Logistics</h1>
                     <p>Log incoming purchases, multi-unit conversions, and batch inventory replenishments.</p>
                 </div>
+                <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
+                    ⚠️ Register Damaged / Lost Items
+                </button>
             </div>
 
             <div style="display:grid; grid-template-columns:420px 1fr; gap:28px;" class="responsive-split-grid">
@@ -362,6 +381,9 @@
                     <h1>Stock Out / Sales Dispatch</h1>
                     <p>Process sales transactions and drain inventory using strict First-In First-Out (FIFO) allocation.</p>
                 </div>
+                <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
+                    ⚠️ Register Damaged / Lost Items
+                </button>
             </div>
 
             <div style="display:grid; grid-template-columns:420px 1fr; gap:28px;" class="responsive-split-grid">
@@ -514,7 +536,7 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                                 <div class="form-group">
                                     <label>Order Quantity</label>
-                                    <input type="number" step="1" min="1" id="purchasingQty" class="form-control" placeholder="0" required>
+                                    <input type="number" step="any" min="0.01" id="purchasingQty" class="form-control" placeholder="0" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Color / Spec</label>
@@ -527,14 +549,14 @@
                                 <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier info or freight note">
                             </div>
 
-                            <button type="submit" class="btn btn-primary" style="width:100%;">Add Line Item</button>
+                            <button type="submit" class="btn btn-primary" style="width:100%;">🛒 Add to Cart</button>
                         </form>
                     </div>
 
                     <!-- Low Stock System Scanner -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title" style="color:var(--danger);">Low Stock System Scanners (&lt; 5 units)</h3>
+                            <h3 class="card-title" style="color:var(--danger);">⚠️ Low Stock Alerts (Threshold Scan)</h3>
                         </div>
                         <div id="purchasingLowStockList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
                             <!-- Populated dynamically -->
@@ -545,7 +567,7 @@
                 <!-- Active Purchasing Requisition Sheet Table -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Active Purchasing Requisition List</h3>
+                        <h3 class="card-title">Active Purchasing Cart &amp; Requisition Sheet</h3>
                         <span class="badge badge-purple" id="purchasingListCount">0 items</span>
                     </div>
                     <div class="table-responsive">
@@ -1036,6 +1058,129 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('editStockOutModal')">Cancel</button>
                     <button type="submit" class="btn btn-success">Apply Adjustments</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Register Damaged / Lost Stock -->
+    <div class="modal-backdrop" id="damagedStockModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 style="color:var(--danger); display:flex; align-items:center; gap:6px;">
+                    ⚠️ Register Damaged / Lost Stock
+                </h3>
+                <button class="modal-close-btn" onclick="closeModal('damagedStockModal')">✕</button>
+            </div>
+            <form id="damagedStockForm" onsubmit="handleDamagedStockSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="damagedBranchSelect">Branch Facility</label>
+                        <select id="damagedBranchSelect" class="form-control" required onchange="handleDamagedBranchChange()"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Search and Choose Product</label>
+                        <div class="search-select-wrapper" id="damagedProductSearchSelect">
+                            <div class="search-select-trigger" id="damagedProductTrigger">Click to select damaged product...</div>
+                            <div class="search-select-dropdown" id="damagedProductDropdown">
+                                <div class="search-select-search-box">
+                                    <input type="text" id="damagedSearchInput" placeholder="Type to filter..." oninput="filterDamagedProducts(this.value)">
+                                </div>
+                                <div id="damagedOptionsList"></div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="damagedProductId" required>
+                        <div id="damagedAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px;">
+                            <span style="color:var(--text-secondary);">Shelf Stock:</span>
+                            <span id="damagedAvailableBadge" class="badge badge-slate">0 available</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="damagedQuantity">Damaged Quantity</label>
+                        <input type="number" step="any" min="0.0001" id="damagedQuantity" class="form-control" placeholder="Enter damaged quantity" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="damagedUnitSelect">Counting Unit</label>
+                        <select id="damagedUnitSelect" class="form-control" required onchange="updateDamagedConversion()"></select>
+                    </div>
+
+                    <div class="form-group" id="damagedConversionBox" style="display:none;">
+                        <label>Packaging Conversion (Base Unit Multiplier)</label>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="damagedConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
+                            <input type="number" step="any" min="0.0001" id="damagedConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onDamagedFactorInput()">
+                            <span id="damagedBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
+                        </div>
+                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="damagedReasonSelect">Damage / Loss Reason</label>
+                        <select id="damagedReasonSelect" class="form-control" required>
+                            <option value="Broken / Shattered during handling">Broken / Shattered during handling</option>
+                            <option value="Water / Moisture / Weather Damage">Water / Moisture / Weather Damage</option>
+                            <option value="Spoiled / Degraded / Expired">Spoiled / Degraded / Expired</option>
+                            <option value="Defective from Factory / Dead on Arrival">Defective from Factory / Dead on Arrival</option>
+                            <option value="Bent / Dented / Physical Damage">Bent / Dented / Physical Damage</option>
+                            <option value="Lost / Stolen / Discrepancy">Lost / Stolen / Discrepancy</option>
+                            <option value="Other Reason">Other Reason</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="damagedReasonNotes">Additional Notes / Incident Details (Optional)</label>
+                        <input type="text" id="damagedReasonNotes" class="form-control" placeholder="e.g. Broken sack during truck unloading">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="damagedDate">Incident Date</label>
+                        <input type="date" id="damagedDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('damagedStockModal')">✕ Cancel</button>
+                    <button type="submit" class="btn btn-danger">⚠️ Deduct from Shelf Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Item in Purchasing Cart -->
+    <div class="modal-backdrop" id="editPurchasingModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>✏️ Edit Item in Purchasing Cart</h3>
+                <button class="modal-close-btn" onclick="closeModal('editPurchasingModal')">✕</button>
+            </div>
+            <form id="editPurchasingForm" onsubmit="handleEditPurchasingSave(event)">
+                <input type="hidden" id="editPurchasingIndex">
+                <div class="modal-body">
+                    <p style="margin-bottom:16px; font-size:14.5px; color:var(--text-primary);">
+                        Product: <strong id="editPurchasingProdTitle">Product</strong>
+                    </p>
+                    <div class="form-group">
+                        <label for="editPurchasingQty">Order Quantity (<span id="editPurchasingUnitDisplay">units</span>)</label>
+                        <input type="number" step="any" min="0.01" id="editPurchasingQty" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPurchasingColor">Color / Specifications</label>
+                        <input type="text" id="editPurchasingColor" class="form-control" placeholder="e.g. Standard, Red, 500m">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPurchasingDestinations">Target Destination Branches</label>
+                        <input type="text" id="editPurchasingDestinations" class="form-control" placeholder="e.g. Downtown Branch, West Hub">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPurchasingNotes">Logistics Notes</label>
+                        <input type="text" id="editPurchasingNotes" class="form-control" placeholder="Supplier remarks or instructions">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editPurchasingModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">💾 Update Cart Item</button>
                 </div>
             </form>
         </div>

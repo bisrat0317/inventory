@@ -719,6 +719,320 @@ async function handleStockOutSubmit(e) {
     }
 }
 
+/**
+ * ============================================================================
+ * DAMAGED / LOST STOCK LOGIC
+ * ============================================================================
+ */
+
+let damagedProducts = [];
+let selectedDamagedProduct = null;
+
+async function openDamagedStockModal(preferredBranchId = null, preferredProductId = null) {
+    try {
+        const branchSelect = document.getElementById('damagedBranchSelect');
+        const activeBranch = preferredBranchId || branchSelect?.value || '';
+
+        const res = await fetch(`/api/stock/out/init?branch_id=${activeBranch}`);
+        const data = await res.json();
+
+        if (data.success) {
+            damagedProducts = data.products || [];
+            AppState.units = data.units || [];
+
+            // Populate branch selector
+            if (branchSelect) {
+                branchSelect.innerHTML = data.permittedBranches.map(b => 
+                    `<option value="${b.id}" ${b.id == (preferredBranchId || data.selectedBranchId) ? 'selected' : ''}>${escapeHtml(b.name)}</option>`
+                ).join('');
+            }
+
+            // Populate unit selector
+            const unitSelect = document.getElementById('damagedUnitSelect');
+            if (unitSelect) {
+                unitSelect.innerHTML = AppState.units.map(u => 
+                    `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.symbol)})</option>`
+                ).join('');
+                if (data.pieceUnitId && !unitSelect.value) unitSelect.value = data.pieceUnitId;
+            }
+
+            renderDamagedProductOptions(damagedProducts);
+
+            // Reset inputs
+            selectedDamagedProduct = null;
+            document.getElementById('damagedProductId').value = '';
+            document.getElementById('damagedProductTrigger').textContent = 'Click to select damaged product...';
+            document.getElementById('damagedQuantity').value = '';
+            document.getElementById('damagedConversionFactor').value = '1';
+            document.getElementById('damagedConversionBox').style.display = 'none';
+            document.getElementById('damagedAvailableNotice').style.display = 'none';
+            document.getElementById('damagedDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('damagedReasonSelect').value = 'Broken / Shattered during handling';
+            document.getElementById('damagedReasonNotes').value = '';
+
+            if (preferredProductId) {
+                selectDamagedProduct(preferredProductId);
+            }
+
+            openModal('damagedStockModal');
+        }
+    } catch (err) {
+        showToast('Error opening damaged stock register: ' + err.message, 'error');
+    }
+}
+
+async function handleDamagedBranchChange() {
+    const branchId = document.getElementById('damagedBranchSelect')?.value;
+    if (!branchId) return;
+
+    try {
+        const res = await fetch(`/api/stock/out/init?branch_id=${branchId}`);
+        const data = await res.json();
+        if (data.success) {
+            damagedProducts = data.products || [];
+            renderDamagedProductOptions(damagedProducts);
+
+            // Reset selected product
+            selectedDamagedProduct = null;
+            document.getElementById('damagedProductId').value = '';
+            document.getElementById('damagedProductTrigger').textContent = 'Click to select damaged product...';
+            document.getElementById('damagedAvailableNotice').style.display = 'none';
+            document.getElementById('damagedConversionBox').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error switching damaged branch:', err);
+    }
+}
+
+function renderDamagedProductOptions(products) {
+    const list = document.getElementById('damagedOptionsList');
+    if (!list) return;
+
+    if (products.length === 0) {
+        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products in this branch</div>';
+        return;
+    }
+
+    list.innerHTML = products.map(p => {
+        const qty = parseFloat(p.branch_quantity || 0);
+        const unit = p.unit_symbol || p.unit_name || '';
+
+        return `
+            <div class="search-select-option" onclick="selectDamagedProduct(${p.id})">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
+                        <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
+                            ${p.type === 1 ? 'Electronics' : 'Construction'}
+                        </span>
+                    </div>
+                    <span class="badge ${qty <= 0 ? 'badge-red' : 'badge-emerald'}" style="font-size:10px;">
+                        ${formatNumber(qty, unit)} ${escapeHtml(unit)} in stock
+                    </span>
+                </div>
+                <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                    Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterDamagedProducts(query) {
+    const q = query.toLowerCase().trim();
+    const filtered = damagedProducts.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.brand.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+    );
+    renderDamagedProductOptions(filtered);
+}
+
+function selectDamagedProduct(productId) {
+    const product = damagedProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    selectedDamagedProduct = product;
+    document.getElementById('damagedProductId').value = product.id;
+    document.getElementById('damagedProductTrigger').textContent = `${product.brand} - ${product.name}`;
+
+    const unitSelect = document.getElementById('damagedUnitSelect');
+    if (unitSelect && product.unit_id) {
+        unitSelect.value = product.unit_id;
+    }
+
+    const dropdown = document.getElementById('damagedProductDropdown');
+    if (dropdown) dropdown.classList.remove('active');
+
+    updateDamagedConversion();
+    updateDamagedAvailableDisplay();
+}
+
+function updateDamagedAvailableDisplay() {
+    const notice = document.getElementById('damagedAvailableNotice');
+    const badge = document.getElementById('damagedAvailableBadge');
+    const qtyInput = document.getElementById('damagedQuantity');
+    if (!notice || !badge) return;
+
+    if (!selectedDamagedProduct) {
+        notice.style.display = 'none';
+        return;
+    }
+
+    const baseQty = parseFloat(selectedDamagedProduct.branch_quantity || 0);
+    const factor = parseFloat(document.getElementById('damagedConversionFactor')?.value || 1);
+    const unitSelect = document.getElementById('damagedUnitSelect');
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitSelect?.value);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
+    const baseUnitName = selectedDamagedProduct.unit_symbol || selectedDamagedProduct.unit_name || 'units';
+
+    const qtyInSelectedUnit = factor > 0 ? (baseQty / factor) : baseQty;
+
+    notice.style.display = 'flex';
+
+    if (baseQty <= 0) {
+        badge.className = 'badge badge-red font-bold';
+        badge.textContent = `0 ${baseUnitName} on shelf (Out of Stock)`;
+        if (qtyInput) qtyInput.max = '0';
+    } else {
+        badge.className = 'badge badge-slate font-bold';
+        if (factor !== 1 && factor > 0) {
+            badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} ${selectedUnitName} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} on shelf)`;
+        } else {
+            badge.textContent = `${formatNumber(baseQty, baseUnitName)} ${baseUnitName} on shelf`;
+        }
+        if (qtyInput) qtyInput.max = String(qtyInSelectedUnit);
+    }
+}
+
+async function updateDamagedConversion() {
+    const unitId = document.getElementById('damagedUnitSelect')?.value;
+    const factorInput = document.getElementById('damagedConversionFactor');
+    const container = document.getElementById('damagedConversionBox');
+    const prefix = document.getElementById('damagedConversionPrefix');
+    const suffix = document.getElementById('damagedBaseUnitSuffix');
+    const qtyInput = document.getElementById('damagedQuantity');
+
+    if (qtyInput && unitId) {
+        const u = (AppState.units || []).find(x => x.id == unitId);
+        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx|sck|sack)$/i.test((u.name || u.symbol || '').trim());
+        if (isInt) {
+            qtyInput.step = '1';
+            qtyInput.min = '1';
+            qtyInput.placeholder = 'e.g. 2';
+        } else {
+            qtyInput.step = 'any';
+            qtyInput.min = '0.0001';
+            qtyInput.placeholder = '0.00';
+        }
+    }
+
+    if (!selectedDamagedProduct || !unitId || !factorInput) return;
+
+    const baseUnitName = selectedDamagedProduct.unit_symbol || selectedDamagedProduct.unit_name || 'base units';
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitId);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
+
+    if (parseInt(unitId, 10) === parseInt(selectedDamagedProduct.unit_id, 10)) {
+        factorInput.value = '1';
+        if (container) container.style.display = 'none';
+        updateDamagedAvailableDisplay();
+    } else {
+        if (container) container.style.display = 'block';
+        if (prefix) prefix.textContent = `1 ${selectedUnitName} =`;
+        if (suffix) suffix.textContent = `${baseUnitName}`;
+
+        try {
+            const res = await fetch(`/api/stock/conversions/${selectedDamagedProduct.id}`);
+            const data = await res.json();
+            const match = (data.conversions || []).find(c => c.unit_id == unitId);
+            if (match && match.factor) {
+                factorInput.value = parseFloat(match.factor);
+            } else if (!factorInput.value || parseFloat(factorInput.value) <= 0 || factorInput.value === '1') {
+                factorInput.value = '1';
+            }
+        } catch (err) {
+            if (!factorInput.value || parseFloat(factorInput.value) <= 0) {
+                factorInput.value = '1';
+            }
+        }
+        updateDamagedAvailableDisplay();
+    }
+}
+
+function onDamagedFactorInput() {
+    updateDamagedAvailableDisplay();
+}
+
+async function handleDamagedStockSubmit(e) {
+    e.preventDefault();
+
+    const productId = document.getElementById('damagedProductId').value;
+    if (!productId) {
+        showToast('Please search and select a damaged product.', 'error');
+        return;
+    }
+
+    const branchId = parseInt(document.getElementById('damagedBranchSelect').value, 10);
+    const quantity = parseFloat(document.getElementById('damagedQuantity').value);
+    const unitId = parseInt(document.getElementById('damagedUnitSelect').value, 10);
+    const factor = parseFloat(document.getElementById('damagedConversionFactor').value || 1);
+    const date = document.getElementById('damagedDate').value;
+    const presetReason = document.getElementById('damagedReasonSelect').value;
+    const customNotes = document.getElementById('damagedReasonNotes').value.trim();
+    const reasonText = customNotes ? `${presetReason} - ${customNotes}` : presetReason;
+
+    // Available shelf check
+    if (selectedDamagedProduct) {
+        const availableBase = parseFloat(selectedDamagedProduct.branch_quantity || 0);
+        const reqBase = quantity * factor;
+        if (reqBase > availableBase) {
+            const unitLbl = selectedDamagedProduct.unit_symbol || selectedDamagedProduct.unit_name || 'units';
+            showToast(`Cannot register damage: Exceeds shelf stock! Available: ${formatNumber(availableBase, unitLbl)} ${unitLbl}, Attempted: ${formatNumber(reqBase, unitLbl)} ${unitLbl}.`, 'error');
+            return;
+        }
+    }
+
+    const payload = {
+        branch_id: branchId,
+        product_id: parseInt(productId, 10),
+        quantity: quantity,
+        unit_id: unitId,
+        conversion_factor: factor,
+        reason: reasonText,
+        date: date
+    };
+
+    try {
+        const res = await fetch('/api/stock/damaged', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+            throw new Error(result.message || 'Failed to record damaged stock.');
+        }
+
+        showToast(result.message || 'Damaged stock registered and subtracted successfully!', 'success');
+        closeModal('damagedStockModal');
+
+        // Refresh views
+        if (AppState.currentView === 'stock-in' && window.loadStockInView) {
+            loadStockInView(true);
+        } else if (AppState.currentView === 'stock-out' && window.loadStockOutView) {
+            loadStockOutView(true);
+        } else if (AppState.currentView === 'branch-ops' && window.renderBranchOpsView && window.activeBranchOpsId) {
+            renderBranchOpsView(window.activeBranchOpsId);
+        } else if (AppState.currentView === 'dashboard' && window.loadDashboardOverview) {
+            loadDashboardOverview();
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
 // Global Trigger toggles for custom search selects
 document.addEventListener('click', (e) => {
     // Stock In Trigger
@@ -746,6 +1060,20 @@ document.addEventListener('click', (e) => {
             }
         } else if (!outDropdown.contains(e.target)) {
             outDropdown.classList.remove('active');
+        }
+    }
+
+    // Damaged Stock Trigger
+    const damTrigger = document.getElementById('damagedProductTrigger');
+    const damDropdown = document.getElementById('damagedProductDropdown');
+    if (damTrigger && damDropdown) {
+        if (damTrigger.contains(e.target)) {
+            damDropdown.classList.toggle('active');
+            if (damDropdown.classList.contains('active')) {
+                document.getElementById('damagedSearchInput')?.focus();
+            }
+        } else if (!damDropdown.contains(e.target)) {
+            damDropdown.classList.remove('active');
         }
     }
 });
