@@ -243,7 +243,7 @@ function printPurchaseManifest() {
                     <th style="width:9%;">Order Qty</th>
                     <th style="width:8%; text-align:right;">Price ($)</th>
                     <th style="width:14%;">Remarks</th>
-                    <th style="width:6%; text-align:center;">True / X</th>
+                    <th style="width:6%; text-align:center;">Tick / X</th>
                     <th style="width:12%;">Comment</th>
                 </tr>
             </thead>
@@ -569,7 +569,7 @@ function exportPurchasingToExcel() {
         'Unit',
         'Price ($)',
         'Remarks',
-        'True / X',
+        'Tick / X',
         'Comment'
     ];
 
@@ -583,7 +583,7 @@ function exportPurchasingToExcel() {
         item.unit || '',
         item.price || '',
         item.notes || '',
-        item.checked ? 'True' : 'X',
+        item.checked ? 'Tick' : 'X',
         ''
     ]);
 
