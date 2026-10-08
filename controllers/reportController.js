@@ -73,13 +73,36 @@ async function getExecutiveReports(req, res, next) {
             invParams.push(bId);
         }
 
-        // 3. Total active SKUs
-        const totalProductsRes = await db.query('SELECT COUNT(id) AS count FROM products WHERE is_deleted = 0');
-        const totalProductsIndexed = parseInt(totalProductsRes.rows[0]?.count || 0, 10);
-
-        // 4. Branches list
-        const branchesRes = await db.query('SELECT id, name FROM branches ORDER BY name ASC');
+        // 3. Branches list
+        const branchesRes = await db.query('SELECT id, name, type FROM branches ORDER BY name ASC');
         const branchesList = branchesRes.rows;
+
+        // 4. Total active SKUs / Products matching branch filter
+        let totalProductsIndexed = 0;
+        if (filterBranch !== 'all') {
+            const bId = parseInt(filterBranch, 10);
+            const branchRow = branchesList.find(b => b.id === bId);
+            const branchType = branchRow ? parseInt(branchRow.type, 10) : null;
+
+            let prodCountSql = `
+                SELECT COUNT(DISTINCT p.id) AS count
+                FROM products p
+                LEFT JOIN branch_inventory bi ON bi.product_id = p.id AND bi.branch_id = $1
+                WHERE p.is_deleted = 0
+            `;
+            const prodCountParams = [bId];
+            if (branchType) {
+                prodCountSql += ` AND (p.type = $2 OR p.type = 0 OR bi.branch_id = $1)`;
+                prodCountParams.push(branchType);
+            } else {
+                prodCountSql += ` AND bi.branch_id = $1`;
+            }
+            const totalProductsRes = await db.query(prodCountSql, prodCountParams);
+            totalProductsIndexed = parseInt(totalProductsRes.rows[0]?.count || 0, 10);
+        } else {
+            const totalProductsRes = await db.query('SELECT COUNT(id) AS count FROM products WHERE is_deleted = 0');
+            totalProductsIndexed = parseInt(totalProductsRes.rows[0]?.count || 0, 10);
+        }
 
         // 5. Query Stock In records (ordered ASC for FIFO queue building)
         const stockInQuery = `
@@ -283,17 +306,37 @@ async function getExecutiveReports(req, res, next) {
         const lowStockRes = await db.query(lowStockQuery, invParams);
 
         // 10. Remaining Product Stock Inventory table
-        const remainingStockQuery = `
-            SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name, bi.quantity,
-                   COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
-            FROM branch_inventory bi
-            JOIN products p ON bi.product_id = p.id
-            LEFT JOIN units u ON p.unit_id = u.id
-            JOIN branches b ON bi.branch_id = b.id
-            WHERE p.is_deleted = 0 AND ${branchConditionInv}
-            ORDER BY b.name ASC, p.brand ASC, p.name ASC
-        `;
-        const remainingStockRes = await db.query(remainingStockQuery, invParams);
+        let remainingStockRes;
+        if (filterBranch !== 'all') {
+            const bId = parseInt(filterBranch, 10);
+            const branchRow = branchesList.find(b => b.id === bId);
+            const branchType = branchRow ? parseInt(branchRow.type, 10) : null;
+            
+            const remainingStockQuery = `
+                SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol,
+                       b.name AS branch_name, COALESCE(bi.quantity, 0) AS quantity,
+                       COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
+                FROM products p
+                LEFT JOIN units u ON p.unit_id = u.id
+                CROSS JOIN branches b
+                LEFT JOIN branch_inventory bi ON bi.product_id = p.id AND bi.branch_id = b.id
+                WHERE p.is_deleted = 0 AND b.id = $1 AND (p.type = b.type OR p.type = 0 OR bi.branch_id = b.id)
+                ORDER BY p.brand ASC, p.name ASC
+            `;
+            remainingStockRes = await db.query(remainingStockQuery, [bId]);
+        } else {
+            const remainingStockQuery = `
+                SELECT p.id AS product_id, p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name, bi.quantity,
+                       COALESCE(p.min_stock_alert, 5)::numeric(12, 2) AS min_stock_alert
+                FROM branch_inventory bi
+                JOIN products p ON bi.product_id = p.id
+                LEFT JOIN units u ON p.unit_id = u.id
+                JOIN branches b ON bi.branch_id = b.id
+                WHERE p.is_deleted = 0
+                ORDER BY b.name ASC, p.brand ASC, p.name ASC
+            `;
+            remainingStockRes = await db.query(remainingStockQuery);
+        }
 
         return res.json({
             success: true,
