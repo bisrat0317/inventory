@@ -10,11 +10,12 @@ async function getAllBranches(req, res, next) {
                 b.id, 
                 b.name, 
                 b.location, 
+                COALESCE(b.type, 1) AS type,
                 b.created_at,
                 COALESCE(SUM(bi.quantity), 0)::numeric(12, 2) AS global_units_on_floor
             FROM branches b
             LEFT JOIN branch_inventory bi ON b.id = bi.branch_id
-            GROUP BY b.id, b.name, b.location, b.created_at
+            GROUP BY b.id, b.name, b.location, b.type, b.created_at
             ORDER BY b.name ASC
         `;
         const result = await db.query(query);
@@ -34,7 +35,7 @@ async function getAllBranches(req, res, next) {
 async function getBranchById(req, res, next) {
     try {
         const branchId = parseInt(req.params.id, 10);
-        const result = await db.query('SELECT * FROM branches WHERE id = $1', [branchId]);
+        const result = await db.query('SELECT id, name, location, COALESCE(type, 1) AS type, created_at FROM branches WHERE id = $1', [branchId]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Branch not found.' });
@@ -54,15 +55,17 @@ async function getBranchById(req, res, next) {
  */
 async function createBranch(req, res, next) {
     try {
-        const { name, location } = req.body;
+        const { name, location, type } = req.body;
 
         if (!name || name.trim().length === 0) {
             return res.status(400).json({ success: false, message: 'Branch name is strictly required.' });
         }
 
+        const branchType = parseInt(type, 10) || 1;
+
         const insertRes = await db.query(
-            'INSERT INTO branches (name, location) VALUES ($1, $2) RETURNING id, name, location',
-            [name.trim(), location ? location.trim() : null]
+            'INSERT INTO branches (name, location, type) VALUES ($1, $2, $3) RETURNING id, name, location, type',
+            [name.trim(), location ? location.trim() : null, branchType]
         );
 
         return res.status(201).json({
@@ -81,15 +84,17 @@ async function createBranch(req, res, next) {
 async function updateBranch(req, res, next) {
     try {
         const branchId = parseInt(req.params.id, 10);
-        const { name, location } = req.body;
+        const { name, location, type } = req.body;
 
         if (!branchId || !name || name.trim().length === 0) {
             return res.status(400).json({ success: false, message: 'Valid branch ID and name are required.' });
         }
 
+        const branchType = parseInt(type, 10) || 1;
+
         const updateRes = await db.query(
-            'UPDATE branches SET name = $1, location = $2 WHERE id = $3 RETURNING id, name, location',
-            [name.trim(), location ? location.trim() : null, branchId]
+            'UPDATE branches SET name = $1, location = $2, type = $3 WHERE id = $4 RETURNING id, name, location, type',
+            [name.trim(), location ? location.trim() : null, branchType, branchId]
         );
 
         if (updateRes.rowCount === 0) {

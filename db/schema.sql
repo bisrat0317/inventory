@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS units (
 CREATE TABLE IF NOT EXISTS branches (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    type INT NOT NULL DEFAULT 1, -- 1: Mobile Repair & Electronics, 2: Construction Supply
     location TEXT,
     created_at TIMESTAMP
     WITH

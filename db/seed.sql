@@ -9,7 +9,15 @@ VALUES (1, 'Piece', 'pcs'),
     (4, 'Box', 'box'),
     (5, 'Roll', 'roll'),
     (6, 'Liter', 'L'),
-    (7, 'Set', 'set') ON CONFLICT (id) DO
+    (7, 'Set', 'set'),
+    (8, 'Sack', 'sck'),
+    (9, 'Bag', 'bag'),
+    (10, 'Quintal', 'qtl'),
+    (11, 'Ton', 't'),
+    (12, 'Square Meter', 'sqm'),
+    (13, 'Cubic Meter', 'cbm'),
+    (14, 'Pack', 'pk'),
+    (15, 'Carton', 'ctn') ON CONFLICT (id) DO
 UPDATE
 SET
     name = EXCLUDED.name,

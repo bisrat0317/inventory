@@ -7,23 +7,24 @@ require('dotenv').config();
 let pgliteInstance = null;
 let activeEngine = 'pg'; // 'pg' or 'pglite'
 
-const poolConfig = {
-    host: process.env.PGHOST || 'localhost',
-    port: parseInt(process.env.PGPORT || '5432', 10),
-    user: process.env.PGUSER || 'postgres',
-    password: process.env.PGPASSWORD || 'postgres',
-    database: process.env.PGDATABASE || 'inventory_db',
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-};
-
-if (process.env.DATABASE_URL) {
-    poolConfig.connectionString = process.env.DATABASE_URL;
-    if (process.env.DATABASE_URL.includes('sslmode=') || process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        poolConfig.ssl = { rejectUnauthorized: false };
+const poolConfig = process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
     }
-}
+    : {
+        host: process.env.PGHOST || 'localhost',
+        port: parseInt(process.env.PGPORT || '5432', 10),
+        user: process.env.PGUSER || 'postgres',
+        password: process.env.PGPASSWORD || 'postgres',
+        database: process.env.PGDATABASE || 'inventory_db',
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    };
 
 const pool = new Pool(poolConfig);
 

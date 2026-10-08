@@ -16,15 +16,25 @@ async function getStockInInitData(req, res, next) {
             selectedBranchId = branchInfo.branches[0].id;
         }
 
-        // Fetch products categorized by branch type
-        const productsRes = await db.query(`
+        const selectedBranch = branchInfo.branches.find(b => b.id === selectedBranchId);
+        const branchType = selectedBranch ? parseInt(selectedBranch.type, 10) : null;
+
+        // Fetch products filtered by selected branch category
+        let prodSql = `
             SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id,
                    u.name AS unit_name, u.symbol AS unit_symbol
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
             WHERE p.is_deleted = 0
-            ORDER BY p.brand ASC, p.name ASC
-        `);
+        `;
+        const prodParams = [];
+        if (branchType) {
+            prodSql += ` AND (p.type = $1 OR p.type = 0)`;
+            prodParams.push(branchType);
+        }
+        prodSql += ` ORDER BY p.brand ASC, p.name ASC`;
+
+        const productsRes = await db.query(prodSql, prodParams);
 
         // Fetch units
         const unitsRes = await db.query('SELECT * FROM units ORDER BY name ASC');
@@ -182,15 +192,25 @@ async function getStockOutInitData(req, res, next) {
             selectedBranchId = branchInfo.branches[0].id;
         }
 
-        // Fetch products
-        const productsRes = await db.query(`
+        const selectedBranch = branchInfo.branches.find(b => b.id === selectedBranchId);
+        const branchType = selectedBranch ? parseInt(selectedBranch.type, 10) : null;
+
+        // Fetch products filtered by selected branch category
+        let prodSql = `
             SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id,
                    u.name AS unit_name, u.symbol AS unit_symbol
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
             WHERE p.is_deleted = 0
-            ORDER BY p.brand ASC, p.name ASC
-        `);
+        `;
+        const prodParams = [];
+        if (branchType) {
+            prodSql += ` AND (p.type = $1 OR p.type = 0)`;
+            prodParams.push(branchType);
+        }
+        prodSql += ` ORDER BY p.brand ASC, p.name ASC`;
+
+        const productsRes = await db.query(prodSql, prodParams);
 
         // Fetch units
         const unitsRes = await db.query('SELECT * FROM units ORDER BY name ASC');

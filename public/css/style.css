@@ -811,16 +811,19 @@ tr:hover td {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.5);
-    backdrop-filter: blur(5px);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 2050;
-    padding: 20px;
+    padding: 20px 16px;
     box-sizing: border-box;
     display: none;
     opacity: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transition: opacity var(--transition-normal);
 }
 
@@ -835,14 +838,25 @@ tr:hover td {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-xl);
     width: 100%;
-    max-width: 520px;
+    max-width: 540px;
     box-shadow: var(--shadow-xl);
-    overflow: hidden;
     transform: scale(0.95);
     transition: transform var(--transition-normal);
-    max-height: 90vh;
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
     display: flex;
     flex-direction: column;
+    margin: auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.modal-dialog form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .modal-backdrop.open .modal-dialog,
@@ -857,6 +871,7 @@ tr:hover td {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -872,7 +887,7 @@ tr:hover td {
     color: var(--text-muted);
     font-size: 18px;
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -885,17 +900,21 @@ tr:hover td {
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 20px 24px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .modal-footer {
-    padding: 16px 24px;
+    padding: 14px 24px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
