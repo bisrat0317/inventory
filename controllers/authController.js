@@ -47,16 +47,21 @@ async function login(req, res, next) {
             assignedBranches: assignedBranches
         };
 
-        return res.json({
-            success: true,
-            message: 'Login successful.',
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                assignedBranches: assignedBranches
+        req.session.save((saveErr) => {
+            if (saveErr) {
+                return next(saveErr);
             }
+            return res.json({
+                success: true,
+                message: 'Login successful.',
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    assignedBranches: assignedBranches
+                }
+            });
         });
     } catch (err) {
         next(err);
