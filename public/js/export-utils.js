@@ -211,8 +211,9 @@ function printPurchaseManifest() {
                 <td style="font-size:7.5pt;">${escapeHtml(item.destinations || 'All Branches')}</td>
                 <td style="font-weight:700;">${formatNumber(item.qty, item.unit)} ${escapeHtml(item.unit || '')}</td>
                 <td style="text-align:right;">${item.price ? '$' + escapeHtml(item.price) : '___________'}</td>
-                <td class="text-center" style="font-size:10pt; font-family:monospace;">☐</td>
                 <td style="font-size:7.5pt;">${escapeHtml(item.notes || '')}</td>
+                <td class="text-center" style="font-size:10pt; font-family:monospace;">☐</td>
+                <td>&nbsp;</td>
             </tr>
         `;
     }).join('');
@@ -235,14 +236,15 @@ function printPurchaseManifest() {
             <thead>
                 <tr>
                     <th style="width:4%; text-align:center;">No</th>
-                    <th style="width:13%;">Brand / Maker</th>
-                    <th style="width:18%;">Product Name</th>
-                    <th style="width:10%;">Color / Spec</th>
-                    <th style="width:12%;">Destination</th>
-                    <th style="width:10%;">Order Qty</th>
-                    <th style="width:9%; text-align:right;">Price ($)</th>
-                    <th style="width:8%; text-align:center;">True / X</th>
-                    <th style="width:16%;">Comment</th>
+                    <th style="width:11%;">Brand / Maker</th>
+                    <th style="width:16%;">Product Name</th>
+                    <th style="width:9%;">Color / Spec</th>
+                    <th style="width:11%;">Destination</th>
+                    <th style="width:9%;">Order Qty</th>
+                    <th style="width:8%; text-align:right;">Price ($)</th>
+                    <th style="width:14%;">Remarks</th>
+                    <th style="width:6%; text-align:center;">True / X</th>
+                    <th style="width:12%;">Comment</th>
                 </tr>
             </thead>
             <tbody>
@@ -566,6 +568,7 @@ function exportPurchasingToExcel() {
         'Order Quantity',
         'Unit',
         'Price ($)',
+        'Remarks',
         'True / X',
         'Comment'
     ];
@@ -579,8 +582,9 @@ function exportPurchasingToExcel() {
         item.qty || 0,
         item.unit || '',
         item.price || '',
+        item.notes || '',
         item.checked ? 'True' : 'X',
-        item.notes || ''
+        ''
     ]);
 
     downloadCsv('Purchase_Order', headers, rows);
