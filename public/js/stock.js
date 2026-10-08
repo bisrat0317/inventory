@@ -6,6 +6,62 @@ let stockInProducts = [];
 let stockOutProducts = [];
 let selectedStockInProduct = null;
 let selectedStockOutProduct = null;
+let stockOutConversionsMap = {};
+
+/**
+ * ============================================================================
+ * HELPER: DUAL-UNIT STOCK FORMATTER
+ * ============================================================================
+ */
+function formatDualStock(quantity, unitSymbol = '', unitName = '') {
+    const qty = parseFloat(quantity) || 0;
+    const sym = (unitSymbol || unitName || '').toLowerCase().trim();
+    const badgeClass = qty <= 5 ? 'badge-red font-bold' : 'badge-slate';
+
+    const baseDisplay = `<span class="badge ${badgeClass}">${formatNumber(qty, unitSymbol || unitName)} ${escapeHtml(unitSymbol || unitName || '')}</span>`;
+
+    // Weight helper: kg -> Sack (50kg) & Quintal (100kg)
+    if ((sym === 'kg' || sym === 'kilogram') && qty >= 50) {
+        const scks = (qty / 50).toFixed(1).replace(/\.0$/, '');
+        const qtls = (qty / 100).toFixed(2).replace(/\.00$/, '').replace(/(\.[1-9])0$/, '$1');
+        return `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+                <div>${baseDisplay}</div>
+                <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
+                    &asymp; ${scks} sck (${qtls} qtl)
+                </div>
+            </div>
+        `;
+    }
+
+    // Length helper: meter -> Roll (100m)
+    if ((sym === 'm' || sym === 'meter' || sym === 'meters') && qty >= 100) {
+        const rolls = (qty / 100).toFixed(1).replace(/\.0$/, '');
+        return `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+                <div>${baseDisplay}</div>
+                <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
+                    &asymp; ${rolls} rolls (100m/roll)
+                </div>
+            </div>
+        `;
+    }
+
+    // Liquid helper: Liter -> Bucket (20L)
+    if ((sym === 'l' || sym === 'liter' || sym === 'liters') && qty >= 20) {
+        const buckets = (qty / 20).toFixed(1).replace(/\.0$/, '');
+        return `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+                <div>${baseDisplay}</div>
+                <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
+                    &asymp; ${buckets} bkt (20L/bkt)
+                </div>
+            </div>
+        `;
+    }
+
+    return baseDisplay;
+}
 
 /**
  * ============================================================================
@@ -25,8 +81,6 @@ function resetStockInForm() {
     if (qty) qty.value = '';
     const price = document.getElementById('stockInPurchasePrice');
     if (price) price.value = '';
-    const convDisplay = document.getElementById('stockInConversionDisplay');
-    if (convDisplay) convDisplay.value = '';
     const convFactor = document.getElementById('stockInConversionFactor');
     if (convFactor) convFactor.value = '1';
     const convBox = document.getElementById('stockInConversionContainer');
@@ -47,8 +101,6 @@ function resetStockOutForm() {
     if (qty) qty.value = '';
     const price = document.getElementById('stockOutSoldPrice');
     if (price) price.value = '';
-    const convDisplay = document.getElementById('stockOutConversionFactorDisplay');
-    if (convDisplay) convDisplay.value = '';
     const convFactor = document.getElementById('stockOutConversionFactor');
     if (convFactor) convFactor.value = '1';
     const convBox = document.getElementById('stockOutConversionBox');
@@ -174,7 +226,7 @@ function selectStockInProduct(productId) {
     document.getElementById('stockInProductId').value = product.id;
     document.getElementById('stockInProductTrigger').textContent = `${product.brand} - ${product.name}`;
     
-    // Auto-set unit to product's base unit
+    // Set unit to product's base unit
     const unitSelect = document.getElementById('stockInUnitSelect');
     if (unitSelect && product.unit_id) {
         unitSelect.value = product.unit_id;
@@ -190,9 +242,11 @@ function selectStockInProduct(productId) {
 async function updateStockInConversion() {
     const unitId = document.getElementById('stockInUnitSelect')?.value;
     const factorInput = document.getElementById('stockInConversionFactor');
-    const displayInput = document.getElementById('stockInConversionDisplay');
     const container = document.getElementById('stockInConversionContainer');
+    const prefix = document.getElementById('stockInConversionPrefix');
+    const suffix = document.getElementById('stockInBaseUnitSuffix');
     const qtyInput = document.getElementById('stockInQuantity');
+    const unitSelect = document.getElementById('stockInUnitSelect');
 
     // Adjust step and min attribute if unit is integer-based
     if (qtyInput && unitId) {
@@ -209,27 +263,40 @@ async function updateStockInConversion() {
         }
     }
 
-    if (!selectedStockInProduct || !unitId || !factorInput || !displayInput) return;
+    if (!selectedStockInProduct || !unitId || !factorInput) return;
+
+    const baseUnitName = selectedStockInProduct.unit_symbol || selectedStockInProduct.unit_name || 'base units';
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitId);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
 
     if (parseInt(unitId, 10) === parseInt(selectedStockInProduct.unit_id, 10)) {
         factorInput.value = '1';
-        displayInput.value = '1.0 (Direct 1:1 Base Unit)';
         if (container) container.style.display = 'none';
     } else {
+        if (container) container.style.display = 'block';
+        if (prefix) prefix.textContent = `1 ${selectedUnitName} =`;
+        if (suffix) suffix.textContent = `${baseUnitName}`;
+
+        // Check if there is already a saved conversion for this product
         try {
             const res = await fetch(`/api/stock/conversions/${selectedStockInProduct.id}`);
             const data = await res.json();
             const match = (data.conversions || []).find(c => c.unit_id == unitId);
-            const factor = match ? parseFloat(match.factor) : 1.0;
-            
-            factorInput.value = factor;
-            displayInput.value = `1 selected unit = ${factor} base (${selectedStockInProduct.unit_symbol || selectedStockInProduct.unit_name})`;
-            if (container) container.style.display = 'block';
+            if (match && match.factor) {
+                factorInput.value = parseFloat(match.factor);
+            } else if (!factorInput.value || parseFloat(factorInput.value) <= 0 || factorInput.value === '1') {
+                factorInput.value = '1';
+            }
         } catch (err) {
-            factorInput.value = '1';
-            displayInput.value = '1.0';
+            if (!factorInput.value || parseFloat(factorInput.value) <= 0) {
+                factorInput.value = '1';
+            }
         }
     }
+}
+
+function onStockInFactorInput() {
+    // User freely types conversion factor
 }
 
 function renderStockInInventoryTable(items) {
@@ -248,14 +315,14 @@ function renderStockInInventoryTable(items) {
     }
 
     tbody.innerHTML = items.map(item => {
-        const unitName = item.unit_symbol || item.unit_name || '';
+        const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
             <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
             <td><strong>${escapeHtml(item.brand)}</strong></td>
             <td style="font-weight:600;">${escapeHtml(item.name)}</td>
             <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td><span class="badge ${parseFloat(item.total_quantity) <= 5 ? 'badge-red font-bold' : 'badge-slate'}">${formatNumber(item.total_quantity, unitName)} ${escapeHtml(unitName)}</span></td>
+            <td>${formatDualStock(item.total_quantity, unitSymbol, item.unit_name)}</td>
             <td>
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
             </td>
@@ -334,6 +401,7 @@ async function loadStockOutView(preserveForm = false) {
         if (data.success) {
             stockOutProducts = data.products || [];
             AppState.units = data.units || [];
+            stockOutConversionsMap = data.conversions || {};
 
             // Populate branch selector
             if (branchSelect) {
@@ -466,7 +534,8 @@ function updateStockOutAvailableDisplay() {
     const baseQty = parseFloat(selectedStockOutProduct.branch_quantity || 0);
     const factor = parseFloat(document.getElementById('stockOutConversionFactor')?.value || 1);
     const unitSelect = document.getElementById('stockOutUnitSelect');
-    const selectedUnitName = unitSelect?.selectedOptions[0]?.text || selectedStockOutProduct.unit_symbol || '';
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitSelect?.value);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
     const baseUnitName = selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name || 'units';
 
     const qtyInSelectedUnit = factor > 0 ? (baseQty / factor) : baseQty;
@@ -481,10 +550,10 @@ function updateStockOutAvailableDisplay() {
         }
     } else {
         badge.className = baseQty <= 5 ? 'badge badge-amber font-bold' : 'badge badge-emerald font-bold';
-        if (factor !== 1) {
-            badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} base stock)`;
+        if (factor !== 1 && factor > 0) {
+            badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} ${selectedUnitName} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} in shelf stock)`;
         } else {
-            badge.textContent = `${formatNumber(baseQty, baseUnitName)} ${baseUnitName} available in branch`;
+            badge.textContent = `${formatNumber(baseQty, baseUnitName)} ${baseUnitName} available on shelf`;
         }
         if (qtyInput) {
             qtyInput.max = String(qtyInSelectedUnit);
@@ -495,8 +564,9 @@ function updateStockOutAvailableDisplay() {
 async function updateStockOutConversion() {
     const unitId = document.getElementById('stockOutUnitSelect')?.value;
     const factorInput = document.getElementById('stockOutConversionFactor');
-    const displayInput = document.getElementById('stockOutConversionFactorDisplay');
     const container = document.getElementById('stockOutConversionBox');
+    const prefix = document.getElementById('stockOutConversionPrefix');
+    const suffix = document.getElementById('stockOutBaseUnitSuffix');
     const qtyInput = document.getElementById('stockOutQuantity');
 
     // Adjust step and min attribute if unit is integer-based
@@ -514,30 +584,46 @@ async function updateStockOutConversion() {
         }
     }
 
-    if (!selectedStockOutProduct || !unitId || !factorInput || !displayInput) return;
+    if (!selectedStockOutProduct || !unitId || !factorInput) return;
+
+    const baseUnitName = selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name || 'base units';
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitId);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
 
     if (parseInt(unitId, 10) === parseInt(selectedStockOutProduct.unit_id, 10)) {
         factorInput.value = '1';
-        displayInput.value = '1.0 (Direct Base Unit)';
         if (container) container.style.display = 'none';
         updateStockOutAvailableDisplay();
     } else {
-        try {
-            const res = await fetch(`/api/stock/conversions/${selectedStockOutProduct.id}`);
-            const data = await res.json();
-            const match = (data.conversions || []).find(c => c.unit_id == unitId);
-            const factor = match ? parseFloat(match.factor) : 1.0;
-            
-            factorInput.value = factor;
-            displayInput.value = `1 selected unit = ${factor} base (${selectedStockOutProduct.unit_symbol || selectedStockOutProduct.unit_name})`;
-            if (container) container.style.display = 'block';
-            updateStockOutAvailableDisplay();
-        } catch (err) {
-            factorInput.value = '1';
-            displayInput.value = '1.0';
-            updateStockOutAvailableDisplay();
+        if (container) container.style.display = 'block';
+        if (prefix) prefix.textContent = `1 ${selectedUnitName} =`;
+        if (suffix) suffix.textContent = `${baseUnitName}`;
+
+        const convKey = `${selectedStockOutProduct.id}_${unitId}_${selectedStockOutProduct.unit_id}`;
+        if (stockOutConversionsMap[convKey]) {
+            factorInput.value = stockOutConversionsMap[convKey];
+        } else {
+            try {
+                const res = await fetch(`/api/stock/conversions/${selectedStockOutProduct.id}`);
+                const data = await res.json();
+                const match = (data.conversions || []).find(c => c.unit_id == unitId);
+                if (match && match.factor) {
+                    factorInput.value = parseFloat(match.factor);
+                } else if (!factorInput.value || parseFloat(factorInput.value) <= 0 || factorInput.value === '1') {
+                    factorInput.value = '1';
+                }
+            } catch (err) {
+                if (!factorInput.value || parseFloat(factorInput.value) <= 0) {
+                    factorInput.value = '1';
+                }
+            }
         }
+        updateStockOutAvailableDisplay();
     }
+}
+
+function onStockOutFactorInput() {
+    updateStockOutAvailableDisplay();
 }
 
 function renderStockOutInventoryTable(items) {
@@ -556,15 +642,15 @@ function renderStockOutInventoryTable(items) {
     }
 
     tbody.innerHTML = items.map(item => {
-        const unitName = item.unit_symbol || item.unit_name || '';
+        const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
             <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
             <td style="font-weight:600;">${escapeHtml(item.name)}</td>
             <td><strong>${escapeHtml(item.brand)}</strong></td>
             <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td>${escapeHtml(unitName)}</td>
-            <td><span class="badge ${parseFloat(item.quantity) <= 5 ? 'badge-red font-bold' : 'badge-slate'}">${formatNumber(item.quantity, unitName)}</span></td>
+            <td>${escapeHtml(unitSymbol)}</td>
+            <td>${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</td>
             <td>
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
             </td>

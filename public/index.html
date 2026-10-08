@@ -301,10 +301,14 @@
                             <select id="stockInUnitSelect" class="form-control" required onchange="updateStockInConversion()"></select>
                         </div>
 
-                        <div class="form-group" id="stockInConversionContainer">
-                            <label>Unit Base Conversion Factor</label>
-                            <input type="text" id="stockInConversionDisplay" class="form-control" placeholder="Calculated automatically">
-                            <input type="hidden" id="stockInConversionFactor" value="1">
+                        <div class="form-group" id="stockInConversionContainer" style="display:none;">
+                            <label>Packaging Conversion (Base Unit Multiplier)</label>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span id="stockInConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
+                                <input type="number" step="any" min="0.0001" id="stockInConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onStockInFactorInput()">
+                                <span id="stockInBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
+                            </div>
+                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
                         </div>
 
                         <div class="form-group">
@@ -401,9 +405,13 @@
                         </div>
 
                         <div class="form-group" id="stockOutConversionBox" style="display:none;">
-                            <label>Unit Base Conversion Factor (Read-Only)</label>
-                            <input type="text" id="stockOutConversionFactorDisplay" class="form-control" readonly>
-                            <input type="hidden" id="stockOutConversionFactor" value="1">
+                            <label>Packaging Conversion (Base Unit Multiplier)</label>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span id="stockOutConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
+                                <input type="number" step="any" min="0.0001" id="stockOutConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onStockOutFactorInput()">
+                                <span id="stockOutBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
+                            </div>
+                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
                         </div>
 
                         <div class="form-group">
