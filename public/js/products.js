@@ -33,6 +33,7 @@ async function loadProducts() {
         const data = await res.json();
         if (data.success) {
             productsCache = data.products;
+            window.productsCache = productsCache;
             if (data.units) {
                 AppState.units = data.units;
                 populateUnitDropdowns(data.units);

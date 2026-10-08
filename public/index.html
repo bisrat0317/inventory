@@ -217,6 +217,14 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         Add Product
                     </button>
+                    <button class="btn btn-secondary" onclick="exportProductsToExcel()" title="Download product catalog as Excel spreadsheet">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()" title="Print formatted product catalog">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Print Catalog
+                    </button>
                     <button class="btn btn-danger-outline" onclick="openArchiveViewModal()">
                         🗄️ Inactive / Deleted Products
                     </button>
@@ -485,21 +493,32 @@
         <section id="view-purchasing" class="app-view" style="display:none;">
             <div class="page-header no-print">
                 <div class="page-title">
-                    <h1>Purchasing Requisition Compiler</h1>
+                    <h1>Purchasing Requisition &amp; Order Sheet</h1>
                     <p>Compile custom line items or auto-scan low stock alerts into a consolidated, print-ready A4 manifest sheet.</p>
                 </div>
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="exportPurchasingToExcel()" title="Export purchasing order to Excel CSV">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export Excel
+                    </button>
                     <button class="btn btn-primary" onclick="window.print()" style="background:#7c3aed; border-color:#7c3aed;">
-                        🖨️ Print to A4 Paper
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        🖨️ Print / PDF Order Sheet
                     </button>
                 </div>
             </div>
 
-            <!-- Print Header Banner (Shown only when printing) -->
+            <!-- Print Header Banner (Shown only when printing / saving to PDF) -->
             <div class="print-only-header" style="display:none;">
                 <div class="print-header-top">
-                    <h2 class="print-title">OFFICIAL PURCHASE REQUISITION MANIFEST</h2>
-                    <span class="print-meta" id="purchasingPrintTimestamp">Date: 2026-10-07</span>
+                    <div>
+                        <h2 class="print-title">OFFICIAL PURCHASE ORDER &amp; REQUISITION MANIFEST</h2>
+                        <div style="font-size:9.5pt; color:#4b5563; margin-top:2px;">Consolidated stock items to be purchased and dispatched</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="print-meta" id="purchasingPrintTimestamp">Date: -</div>
+                        <div class="print-meta" id="purchasingPrintTotalItems">Total Items: 0</div>
+                    </div>
                 </div>
             </div>
 
@@ -545,8 +564,8 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Logistics Notes</label>
-                                <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier info or freight note">
+                                <label>Logistics / Supplier Notes</label>
+                                <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier info, freight or purchase notes">
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width:100%;">🛒 Add to Cart</button>
@@ -574,14 +593,14 @@
                         <table id="purchasingTableSheet">
                             <thead>
                                 <tr>
+                                    <th style="width:45px; text-align:center;">✓ / ✗</th>
                                     <th>Brand / Maker</th>
                                     <th>Product Name</th>
                                     <th>Color / Spec</th>
                                     <th>Destination(s)</th>
-                                    <th>Qty</th>
-                                    <th>Notes</th>
-                                    <th style="width:70px;">Price ($)</th>
-                                    <th style="width:80px;">Remark</th>
+                                    <th>Order Qty</th>
+                                    <th style="width:85px;">Price ($)</th>
+                                    <th style="min-width:180px; width:25%;">Remarks / Notes</th>
                                     <th class="action-column" style="text-align:right;">Action</th>
                                 </tr>
                             </thead>
@@ -605,6 +624,18 @@
                     <button class="btn btn-secondary" onclick="toggleAnalyticsVisualizer()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
                         Toggle Charts
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportExecutiveReportToExcel()" title="Export summary metrics to Excel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Summary Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportRemainingStockToExcel()" title="Export shelf inventory balances to Excel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Stock Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportDamagedReportToExcel()" title="Export damaged stock report to Excel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Damaged Excel
                     </button>
                     <button class="btn btn-secondary" onclick="window.print()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -1256,6 +1287,7 @@
     </div>
 
     <!-- Application Script Modules -->
+    <script src="/js/export-utils.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/dashboard.js"></script>
     <script src="/js/products.js"></script>

@@ -75,6 +75,7 @@ async function loadExecutiveReports() {
 
         if (data.success) {
             reportsDataCache = data;
+            window.reportsDataCache = reportsDataCache;
 
             // Populate branch scope dropdown
             if (branchSelect && branchSelect.options.length <= 1 && data.branches) {

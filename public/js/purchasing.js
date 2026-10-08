@@ -1,5 +1,5 @@
 /**
- * StockMatrix - Purchasing Requisition Manifest Compiler
+ * StockMatrix - Purchasing Requisition & Order Manifest Module
  */
 
 let purchasingManifestItems = [];
@@ -7,16 +7,15 @@ let purchasingProductsCache = [];
 let purchasingBranchesCache = [];
 let selectedPurchasingProduct = null;
 
+// Expose globally for export utilities
+window.purchasingManifestItems = purchasingManifestItems;
+
 /**
  * Load Purchasing View Context
  */
 async function loadPurchasingView() {
     try {
-        // Set print date
-        const printDate = document.getElementById('purchasingPrintTimestamp');
-        if (printDate) {
-            printDate.textContent = `Manifest Issued: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
-        }
+        updatePurchasingPrintHeader();
 
         // Fetch products and branches
         const [prodRes, repRes] = await Promise.all([
@@ -42,6 +41,24 @@ async function loadPurchasingView() {
     } catch (err) {
         console.error('Error loading purchasing context:', err);
         showToast(err.message, 'error');
+    }
+}
+
+/**
+ * Update the printable header meta for Purchase Order
+ */
+function updatePurchasingPrintHeader() {
+    const printDate = document.getElementById('purchasingPrintTimestamp');
+    const printTotal = document.getElementById('purchasingPrintTotalItems');
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const timeFormatted = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    if (printDate) {
+        printDate.textContent = `Date: ${dateFormatted} at ${timeFormatted}`;
+    }
+    if (printTotal) {
+        printTotal.textContent = `Total Line Items: ${purchasingManifestItems.length}`;
     }
 }
 
@@ -148,7 +165,7 @@ function renderPurchasingLowStockScanner(alerts) {
                     </div>
                     <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
                         🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(current, sym)} ${escapeHtml(sym)} left</span>
-                        <span style="color:var(--text-muted); font-size:11px;">(Min threshold: ${formatNumber(threshold, sym)} ${escapeHtml(sym)})</span>
+                        <span style="color:var(--text-muted); font-size:11px;">(Min alert: &le; ${formatNumber(threshold, sym)} ${escapeHtml(sym)})</span>
                     </div>
                 </div>
                 <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addLowStockToPurchasing('${escapeHtml(item.brand)}', '${escapeHtml(item.product_name)}', '${escapeHtml(item.branch_name)}', ${threshold}, ${current}, '${escapeHtml(sym)}')">
@@ -166,20 +183,22 @@ function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentS
     const threshold = parseFloat(minThreshold) || 5;
     const current = parseFloat(currentStock) || 0;
     const sym = unitSymbol || 'units';
-
-    // Suggest quantity equal to the configured minimum threshold (or shortage delta)
     const suggestedQty = threshold > 0 ? threshold : 5;
 
     purchasingManifestItems.push({
+        checked: false,
         brand: brand,
         name: name,
         color: 'Standard',
         destinations: branchName,
         qty: suggestedQty,
+        price: '',
         notes: `Low Stock Alert (${formatNumber(current, sym)} left, Min alert &le; ${formatNumber(threshold, sym)} ${sym})`,
         unit: sym
     });
 
+    window.purchasingManifestItems = purchasingManifestItems;
+    updatePurchasingPrintHeader();
     renderPurchasingTable();
     showToast(`Added ${brand} - ${name} (${formatNumber(suggestedQty, sym)} ${sym}) to purchasing cart.`, 'success');
 }
@@ -205,18 +224,22 @@ function handlePurchasingAddLine(e) {
 
     const qty = parseFloat(document.getElementById('purchasingQty').value);
     const color = document.getElementById('purchasingColor').value.trim() || 'Standard';
-    const notes = document.getElementById('purchasingNotes').value.trim() || '-';
+    const notes = document.getElementById('purchasingNotes').value.trim() || '';
     const unit = selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || '';
 
     purchasingManifestItems.push({
+        checked: false,
         brand: selectedPurchasingProduct.brand,
         name: selectedPurchasingProduct.name,
         color: color,
         destinations: selectedBranches.join(', '),
         qty: qty,
+        price: '',
         notes: notes,
         unit: unit
     });
+
+    window.purchasingManifestItems = purchasingManifestItems;
 
     // Reset form inputs
     document.getElementById('purchasingQty').value = '';
@@ -226,8 +249,37 @@ function handlePurchasingAddLine(e) {
     document.getElementById('purchasingProductTrigger').textContent = 'Click to select product...';
     selectedPurchasingProduct = null;
 
+    updatePurchasingPrintHeader();
     renderPurchasingTable();
     showToast('Product line added to purchasing cart.', 'success');
+}
+
+/**
+ * Toggle checkmark / tick status for an item
+ */
+function togglePurchasingCheck(index) {
+    if (purchasingManifestItems[index]) {
+        purchasingManifestItems[index].checked = !purchasingManifestItems[index].checked;
+        renderPurchasingTable();
+    }
+}
+
+/**
+ * Update item price in purchasing sheet
+ */
+function updatePurchasingPrice(index, val) {
+    if (purchasingManifestItems[index]) {
+        purchasingManifestItems[index].price = val;
+    }
+}
+
+/**
+ * Update item remark/notes in purchasing sheet
+ */
+function updatePurchasingRemark(index, val) {
+    if (purchasingManifestItems[index]) {
+        purchasingManifestItems[index].notes = val;
+    }
 }
 
 /**
@@ -268,8 +320,9 @@ function handleEditPurchasingSave(e) {
     purchasingManifestItems[index].qty = newQty;
     purchasingManifestItems[index].color = document.getElementById('editPurchasingColor').value.trim() || 'Standard';
     purchasingManifestItems[index].destinations = document.getElementById('editPurchasingDestinations').value.trim() || '-';
-    purchasingManifestItems[index].notes = document.getElementById('editPurchasingNotes').value.trim() || '-';
+    purchasingManifestItems[index].notes = document.getElementById('editPurchasingNotes').value.trim() || '';
 
+    window.purchasingManifestItems = purchasingManifestItems;
     closeModal('editPurchasingModal');
     renderPurchasingTable();
     showToast('Cart item updated successfully!', 'success');
@@ -280,6 +333,8 @@ function handleEditPurchasingSave(e) {
  */
 function removePurchasingLine(index) {
     purchasingManifestItems.splice(index, 1);
+    window.purchasingManifestItems = purchasingManifestItems;
+    updatePurchasingPrintHeader();
     renderPurchasingTable();
 }
 
@@ -304,26 +359,45 @@ function renderPurchasingTable() {
         return;
     }
 
-    tbody.innerHTML = purchasingManifestItems.map((item, idx) => `
-        <tr>
-            <td><strong>${escapeHtml(item.brand)}</strong></td>
-            <td style="font-weight:600;">${escapeHtml(item.name)}</td>
-            <td>${escapeHtml(item.color)}</td>
-            <td style="color:var(--text-secondary); font-size:13px;">${escapeHtml(item.destinations)}</td>
-            <td><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> ${escapeHtml(item.unit || '')}</td>
-            <td style="font-size:12.5px; color:var(--text-muted);">${escapeHtml(item.notes)}</td>
-            <td style="border-bottom:1px dashed var(--border-color);"></td>
-            <td style="border-bottom:1px dashed var(--border-color);"></td>
-            <td class="action-column" style="text-align:right; white-space:nowrap;">
-                <button class="btn btn-secondary" style="padding:3px 8px; font-size:11.5px; margin-right:4px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
-                    ✏️ Edit
-                </button>
-                <button class="btn btn-danger-outline" style="padding:3px 8px; font-size:11.5px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
-                    ✕ Remove
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = purchasingManifestItems.map((item, idx) => {
+        const isChecked = item.checked === true;
+        const checkIcon = isChecked ? '✓' : '☐';
+
+        return `
+            <tr class="${isChecked ? 'row-checked' : ''}">
+                <!-- Column 1: Small width column for checkmark / tick or X [ ✓ / ✗ ] -->
+                <td style="width:45px; text-align:center; vertical-align:middle;">
+                    <button type="button" class="btn btn-secondary no-print" style="padding:2px 8px; font-size:13px; font-weight:700; ${isChecked ? 'background:var(--success); color:#fff; border-color:var(--success);' : ''}" onclick="togglePurchasingCheck(${idx})" title="Click to toggle check/uncheck status">
+                        ${isChecked ? '✓' : '☐'}
+                    </button>
+                    <!-- Printable check box square -->
+                    <span class="print-check-box" style="display:none;">${isChecked ? '[✓]' : '[  ]'}</span>
+                </td>
+                <td><strong>${escapeHtml(item.brand)}</strong></td>
+                <td style="font-weight:600; color:var(--text-primary);">${escapeHtml(item.name)}</td>
+                <td>${escapeHtml(item.color)}</td>
+                <td style="color:var(--text-secondary); font-size:13px;">${escapeHtml(item.destinations)}</td>
+                <td><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> ${escapeHtml(item.unit || '')}</td>
+                <td style="width:85px;">
+                    <input type="text" class="form-control no-print" style="padding:4px 6px; font-size:12px; height:28px;" placeholder="$" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
+                    <span class="print-value-only" style="display:none;">${item.price ? '$' + escapeHtml(item.price) : '___________'}</span>
+                </td>
+                <!-- Column 8: Wider column to write remarks / notes -->
+                <td style="min-width:180px; width:25%;">
+                    <input type="text" class="form-control no-print" style="padding:4px 8px; font-size:12px; height:28px;" placeholder="Add remarks or instructions..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
+                    <span class="print-value-only" style="display:none; font-size:11px;">${escapeHtml(item.notes || '')}</span>
+                </td>
+                <td class="action-column" style="text-align:right; white-space:nowrap;">
+                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11.5px; margin-right:4px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
+                        ✏️ Edit
+                    </button>
+                    <button class="btn btn-danger-outline" style="padding:3px 8px; font-size:11.5px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
+                        ✕ Remove
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // Global Trigger toggle for Purchasing custom search select
@@ -341,3 +415,16 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// Attach handlers to window
+window.loadPurchasingView = loadPurchasingView;
+window.handlePurchasingAddLine = handlePurchasingAddLine;
+window.addLowStockToPurchasing = addLowStockToPurchasing;
+window.togglePurchasingCheck = togglePurchasingCheck;
+window.updatePurchasingPrice = updatePurchasingPrice;
+window.updatePurchasingRemark = updatePurchasingRemark;
+window.openEditPurchasingLine = openEditPurchasingLine;
+window.handleEditPurchasingSave = handleEditPurchasingSave;
+window.removePurchasingLine = removePurchasingLine;
+window.filterPurchasingProducts = filterPurchasingProducts;
+window.selectPurchasingProduct = selectPurchasingProduct;
