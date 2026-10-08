@@ -90,6 +90,7 @@ async function loadExecutiveReports() {
             renderDamagedLedger(data.damagedLedger);
             renderLedgers(data.inboundLedger, data.outboundLedger);
             renderRemainingStock(data.remainingInventory);
+            updateReportsPrintHeader(data.filters, data.branches);
 
             // Re-render charts if container is open
             const chartsWrapper = document.getElementById('analyticsChartsWrapper');
@@ -100,6 +101,31 @@ async function loadExecutiveReports() {
     } catch (err) {
         console.error('Error loading reports:', err);
         showToast(err.message, 'error');
+    }
+}
+
+/**
+ * Update the printable header metadata for Business Reports
+ */
+function updateReportsPrintHeader(filters, branches) {
+    const subtitleElem = document.getElementById('reportsPrintSubtitle');
+    const timestampElem = document.getElementById('reportsPrintTimestamp');
+    
+    if (subtitleElem) {
+        let branchLabel = 'All Branches Combined';
+        if (filters && filters.branch !== 'all' && branches) {
+            const b = branches.find(item => String(item.id) === String(filters.branch));
+            if (b) branchLabel = `Branch: ${b.name}`;
+        }
+        const rangeLabel = filters?.range ? (filters.range.charAt(0).toUpperCase() + filters.range.slice(1)) : 'Today';
+        subtitleElem.textContent = `Scope: ${branchLabel} · Timeline: ${rangeLabel}`;
+    }
+
+    if (timestampElem) {
+        const now = new Date();
+        const dateFormatted = now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const timeFormatted = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        timestampElem.textContent = `Generated: ${dateFormatted} at ${timeFormatted}`;
     }
 }
 

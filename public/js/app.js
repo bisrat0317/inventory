@@ -176,6 +176,7 @@ function handleRoute() {
     // Hide all view sections
     document.querySelectorAll('.app-view').forEach(view => {
         view.style.display = 'none';
+        view.classList.remove('active');
     });
 
     // Update active tab in header & drawer
@@ -203,6 +204,7 @@ function handleRoute() {
             const dashView = document.getElementById('view-dashboard');
             if (dashView) {
                 dashView.style.display = 'block';
+                dashView.classList.add('active');
                 if (window.loadDashboardOverview) window.loadDashboardOverview();
             }
             break;
@@ -211,6 +213,7 @@ function handleRoute() {
             const opsView = document.getElementById('view-branch-ops');
             if (opsView) {
                 opsView.style.display = 'block';
+                opsView.classList.add('active');
                 if (window.loadBranchOperations && subParam) {
                     window.loadBranchOperations(subParam);
                 } else if (window.loadBranchOperations) {
@@ -223,6 +226,7 @@ function handleRoute() {
             const prodView = document.getElementById('view-products');
             if (prodView) {
                 prodView.style.display = 'block';
+                prodView.classList.add('active');
                 if (window.loadProducts) window.loadProducts();
             }
             break;
@@ -231,6 +235,7 @@ function handleRoute() {
             const stockInView = document.getElementById('view-stock-in');
             if (stockInView) {
                 stockInView.style.display = 'block';
+                stockInView.classList.add('active');
                 if (window.loadStockInView) window.loadStockInView();
             }
             break;
@@ -239,6 +244,7 @@ function handleRoute() {
             const stockOutView = document.getElementById('view-stock-out');
             if (stockOutView) {
                 stockOutView.style.display = 'block';
+                stockOutView.classList.add('active');
                 if (window.loadStockOutView) window.loadStockOutView();
             }
             break;
@@ -247,6 +253,7 @@ function handleRoute() {
             const purchView = document.getElementById('view-purchasing');
             if (purchView) {
                 purchView.style.display = 'block';
+                purchView.classList.add('active');
                 if (window.loadPurchasingView) window.loadPurchasingView();
             }
             break;
@@ -255,6 +262,7 @@ function handleRoute() {
             const repView = document.getElementById('view-reports');
             if (repView) {
                 repView.style.display = 'block';
+                repView.classList.add('active');
                 if (window.loadExecutiveReports) window.loadExecutiveReports();
             }
             break;
@@ -263,6 +271,7 @@ function handleRoute() {
             const branchView = document.getElementById('view-branches');
             if (branchView) {
                 branchView.style.display = 'block';
+                branchView.classList.add('active');
                 if (window.loadBranches) window.loadBranches();
             }
             break;
@@ -271,6 +280,7 @@ function handleRoute() {
             const accView = document.getElementById('view-accounts');
             if (accView) {
                 accView.style.display = 'block';
+                accView.classList.add('active');
                 if (window.loadAccounts) window.loadAccounts();
             }
             break;
