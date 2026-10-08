@@ -193,7 +193,7 @@ function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentS
         destinations: branchName,
         qty: suggestedQty,
         price: '',
-        notes: `Low Stock Alert (${formatNumber(current, sym)} left, Min alert &le; ${formatNumber(threshold, sym)} ${sym})`,
+        notes: `Low Stock Alert (${formatNumber(current, sym)} left, Min alert: ${formatNumber(threshold, sym)} ${sym})`,
         unit: sym
     });
 
@@ -360,38 +360,27 @@ function renderPurchasingTable() {
     }
 
     tbody.innerHTML = purchasingManifestItems.map((item, idx) => {
-        const isChecked = item.checked === true;
-        const checkIcon = isChecked ? '✓' : '☐';
-
         return `
-            <tr class="${isChecked ? 'row-checked' : ''}">
-                <!-- Column 1: Small width column for checkmark / tick or X [ ✓ / ✗ ] -->
-                <td style="width:45px; text-align:center; vertical-align:middle;">
-                    <button type="button" class="btn btn-secondary no-print" style="padding:2px 8px; font-size:13px; font-weight:700; ${isChecked ? 'background:var(--success); color:#fff; border-color:var(--success);' : ''}" onclick="togglePurchasingCheck(${idx})" title="Click to toggle check/uncheck status">
-                        ${isChecked ? '✓' : '☐'}
-                    </button>
-                    <!-- Printable check box square -->
-                    <span class="print-check-box" style="display:none;">${isChecked ? '[✓]' : '[  ]'}</span>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted); font-size:12px;">
+                    ${idx + 1}
                 </td>
-                <td><strong>${escapeHtml(item.brand)}</strong></td>
+                <td><strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong></td>
                 <td style="font-weight:600; color:var(--text-primary);">${escapeHtml(item.name)}</td>
-                <td>${escapeHtml(item.color)}</td>
-                <td style="color:var(--text-secondary); font-size:13px;">${escapeHtml(item.destinations)}</td>
-                <td><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> ${escapeHtml(item.unit || '')}</td>
-                <td style="width:85px;">
-                    <input type="text" class="form-control no-print" style="padding:4px 6px; font-size:12px; height:28px;" placeholder="$" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
-                    <span class="print-value-only" style="display:none;">${item.price ? '$' + escapeHtml(item.price) : '___________'}</span>
+                <td style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.color || 'Standard')}</td>
+                <td style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.destinations || 'All Branches')}</td>
+                <td><strong style="color:var(--primary); font-size:13px;">${formatNumber(item.qty, item.unit)}</strong> <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(item.unit || '')}</span></td>
+                <td style="width:75px;">
+                    <input type="text" class="form-control" style="padding:3px 6px; font-size:12px; height:28px; width:70px;" placeholder="$" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
                 </td>
-                <!-- Column 8: Wider column to write remarks / notes -->
-                <td style="min-width:180px; width:25%;">
-                    <input type="text" class="form-control no-print" style="padding:4px 8px; font-size:12px; height:28px;" placeholder="Add remarks or instructions..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
-                    <span class="print-value-only" style="display:none; font-size:11px;">${escapeHtml(item.notes || '')}</span>
+                <td>
+                    <input type="text" class="form-control" style="padding:3px 8px; font-size:12px; height:28px; min-width:130px;" placeholder="Add remarks or instructions..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
                 </td>
-                <td class="action-column" style="text-align:right; white-space:nowrap;">
-                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11.5px; margin-right:4px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
+                <td class="action-column" style="text-align:right; white-space:nowrap; width:110px;">
+                    <button class="btn btn-secondary" style="padding:2px 7px; font-size:11px; margin-right:3px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
                         ✏️ Edit
                     </button>
-                    <button class="btn btn-danger-outline" style="padding:3px 8px; font-size:11.5px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
+                    <button class="btn btn-danger-outline" style="padding:2px 7px; font-size:11px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
                         ✕ Remove
                     </button>
                 </td>

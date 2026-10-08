@@ -28,7 +28,7 @@ function printStandaloneDocument(title, bodyHtml) {
             <style>
                 @page {
                     size: A4 portrait;
-                    margin: 10mm 10mm;
+                    margin: 8mm 8mm;
                 }
                 * {
                     box-sizing: border-box;
@@ -41,14 +41,14 @@ function printStandaloneDocument(title, bodyHtml) {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                     background: #ffffff;
                     color: #000000;
-                    font-size: 9pt;
-                    line-height: 1.35;
-                    padding: 4px;
+                    font-size: 8.5pt;
+                    line-height: 1.3;
+                    padding: 0;
                 }
                 .doc-header {
-                    border-bottom: 2.5px solid #000000;
-                    padding-bottom: 8px;
-                    margin-bottom: 12px;
+                    border-bottom: 2px solid #000000;
+                    padding-bottom: 6px;
+                    margin-bottom: 10px;
                 }
                 .doc-header-top {
                     display: flex;
@@ -56,56 +56,58 @@ function printStandaloneDocument(title, bodyHtml) {
                     align-items: flex-start;
                 }
                 .doc-title {
-                    font-size: 15pt;
+                    font-size: 16pt;
                     font-weight: 800;
                     letter-spacing: -0.01em;
                     color: #000000;
                     text-transform: uppercase;
                 }
                 .doc-subtitle {
-                    font-size: 9pt;
+                    font-size: 8.5pt;
                     color: #4b5563;
                     margin-top: 2px;
                 }
                 .doc-meta {
                     text-align: right;
-                    font-size: 8.5pt;
+                    font-size: 8pt;
                     color: #1f2937;
-                    line-height: 1.4;
+                    line-height: 1.35;
                 }
                 table {
                     width: 100%;
+                    table-layout: fixed;
                     border-collapse: collapse;
                     border: 1.5px solid #000000;
                     margin-top: 8px;
-                    margin-bottom: 14px;
-                    font-size: 8.5pt;
+                    margin-bottom: 12px;
+                    font-size: 8pt;
                 }
                 th {
                     background: #f1f5f9;
                     color: #000000;
                     border: 1px solid #000000;
-                    padding: 5px 6px;
+                    padding: 6px 5px;
                     font-weight: 700;
                     text-align: left;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    vertical-align: middle;
                 }
                 td {
                     border: 1px solid #000000;
-                    padding: 4px 6px;
+                    padding: 5px 5px;
                     color: #000000;
                     vertical-align: middle;
                     background: #ffffff;
-                }
-                tr.checked-row td {
-                    background: #f8fafc;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
                 }
                 .text-center { text-align: center; }
                 .text-right { text-align: right; }
                 .font-bold { font-weight: 700; }
                 .check-box {
                     font-family: monospace;
-                    font-size: 11pt;
-                    font-weight: bold;
+                    font-size: 10pt;
                     display: inline-block;
                 }
                 .badge {
@@ -121,11 +123,11 @@ function printStandaloneDocument(title, bodyHtml) {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
                     gap: 8px;
-                    margin-bottom: 12px;
+                    margin-bottom: 10px;
                 }
                 .kpi-card {
                     border: 1.5px solid #000000;
-                    padding: 6px 8px;
+                    padding: 5px 8px;
                     border-radius: 4px;
                     background: #ffffff;
                 }
@@ -136,31 +138,31 @@ function printStandaloneDocument(title, bodyHtml) {
                     text-transform: uppercase;
                 }
                 .kpi-value {
-                    font-size: 12pt;
+                    font-size: 11pt;
                     font-weight: 800;
                     color: #000000;
                     margin-top: 1px;
                 }
                 .signature-section {
                     margin-top: 24px;
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 36px;
+                    display: flex;
+                    justify-content: flex-end;
                     page-break-inside: avoid;
                 }
                 .sig-box {
-                    border-top: 1.5px solid #000000;
-                    padding-top: 6px;
-                    font-size: 8.5pt;
+                    border-top: 1px solid #000000;
+                    width: 320px;
+                    padding-top: 4px;
+                    font-size: 8pt;
                     font-weight: 600;
                 }
                 .doc-footer {
-                    margin-top: 20px;
-                    padding-top: 8px;
+                    margin-top: 14px;
+                    padding-top: 6px;
                     border-top: 1px dashed #9ca3af;
                     display: flex;
                     justify-content: space-between;
-                    font-size: 8pt;
+                    font-size: 7.5pt;
                     color: #6b7280;
                 }
                 tr {
@@ -197,22 +199,20 @@ function printPurchaseManifest() {
     const now = new Date();
     const dateFormatted = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const timeFormatted = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const user = window.AppState?.currentUser?.username || 'Authorized Staff';
+    const user = window.AppState?.currentUser?.username || 'admin';
 
     const rowsHtml = items.map((item, idx) => {
-        const isChecked = item.checked === true;
         return `
-            <tr class="${isChecked ? 'checked-row' : ''}">
-                <td class="text-center" style="width:38px;">
-                    <span class="check-box">${isChecked ? '[✓]' : '[  ]'}</span>
-                </td>
-                <td style="width:110px; font-weight:700;">${escapeHtml(item.brand)}</td>
-                <td style="font-weight:600;">${escapeHtml(item.name)}</td>
-                <td style="width:90px;">${escapeHtml(item.color || 'Standard')}</td>
-                <td style="width:130px; font-size:8pt;">${escapeHtml(item.destinations || 'All Branches')}</td>
-                <td style="width:80px; font-weight:700;">${formatNumber(item.qty, item.unit)} ${escapeHtml(item.unit || '')}</td>
-                <td style="width:85px; text-align:right;">${item.price ? '$' + escapeHtml(item.price) : '___________'}</td>
-                <td style="min-width:180px; width:25%; font-size:8pt;">${escapeHtml(item.notes || '')}</td>
+            <tr>
+                <td class="text-center" style="font-weight:700;">${idx + 1}</td>
+                <td style="font-weight:700;">${escapeHtml(item.brand || '')}</td>
+                <td style="font-weight:600;">${escapeHtml(item.name || '')}</td>
+                <td>${escapeHtml(item.color || 'Standard')}</td>
+                <td style="font-size:7.5pt;">${escapeHtml(item.destinations || 'All Branches')}</td>
+                <td style="font-weight:700;">${formatNumber(item.qty, item.unit)} ${escapeHtml(item.unit || '')}</td>
+                <td style="text-align:right;">${item.price ? '$' + escapeHtml(item.price) : '___________'}</td>
+                <td class="text-center" style="font-size:10pt; font-family:monospace;">☐</td>
+                <td style="font-size:7.5pt;">${escapeHtml(item.notes || '')}</td>
             </tr>
         `;
     }).join('');
@@ -221,8 +221,7 @@ function printPurchaseManifest() {
         <div class="doc-header">
             <div class="doc-header-top">
                 <div>
-                    <h1 class="doc-title">OFFICIAL PURCHASE ORDER &amp; REQUISITION MANIFEST</h1>
-                    <div class="doc-subtitle">Consolidated stock requisition items to be purchased and dispatched</div>
+                    <h1 class="doc-title">PURCHASE ORDER</h1>
                 </div>
                 <div class="doc-meta">
                     <div><strong>Issued:</strong> ${dateFormatted} at ${timeFormatted}</div>
@@ -235,14 +234,15 @@ function printPurchaseManifest() {
         <table>
             <thead>
                 <tr>
-                    <th style="width:38px; text-align:center;">✓ / ✗</th>
-                    <th style="width:110px;">Brand / Maker</th>
-                    <th>Product Name</th>
-                    <th style="width:90px;">Color / Spec</th>
-                    <th style="width:130px;">Destination(s)</th>
-                    <th style="width:80px;">Order Qty</th>
-                    <th style="width:85px; text-align:right;">Price ($)</th>
-                    <th style="min-width:180px; width:25%;">Remarks / Supplier Notes</th>
+                    <th style="width:4%; text-align:center;">No</th>
+                    <th style="width:13%;">Brand / Maker</th>
+                    <th style="width:18%;">Product Name</th>
+                    <th style="width:10%;">Color / Spec</th>
+                    <th style="width:12%;">Destination</th>
+                    <th style="width:10%;">Order Qty</th>
+                    <th style="width:9%; text-align:right;">Price ($)</th>
+                    <th style="width:8%; text-align:center;">True / X</th>
+                    <th style="width:16%;">Comment</th>
                 </tr>
             </thead>
             <tbody>
@@ -252,22 +252,17 @@ function printPurchaseManifest() {
 
         <div class="signature-section">
             <div class="sig-box">
-                <div>Prepared &amp; Approved By (Purchaser / Manager):</div>
-                <div style="margin-top:20px; color:#6b7280; font-size:8pt;">Signature &amp; Date: ___________________________________</div>
-            </div>
-            <div class="sig-box">
-                <div>Received &amp; Stock Verified By (Store / Warehouse):</div>
-                <div style="margin-top:20px; color:#6b7280; font-size:8pt;">Signature &amp; Date: ___________________________________</div>
+                <div>Signature &amp; Date: ___________________________________</div>
             </div>
         </div>
 
         <div class="doc-footer">
             <div>StockMatrix Inventory Management System</div>
-            <div>Official Purchasing Requisition Sheet · Valid for Procurement</div>
+            <div>Official Purchasing Requisition Sheet</div>
         </div>
     `;
 
-    printStandaloneDocument('Purchase_Order_Manifest', bodyHtml);
+    printStandaloneDocument('Purchase_Order', bodyHtml);
 }
 
 /**
@@ -563,19 +558,20 @@ function exportPurchasingToExcel() {
     }
 
     const headers = [
-        'Status (Checked)',
+        'No',
         'Brand / Maker',
         'Product Name',
         'Color / Specification',
-        'Target Destination Branch(es)',
+        'Destination',
         'Order Quantity',
-        'Measurement Unit',
-        'Estimated Unit Price ($)',
-        'Remarks / Supplier Notes'
+        'Unit',
+        'Price ($)',
+        'True / X',
+        'Comment'
     ];
 
-    const rows = window.purchasingManifestItems.map(item => [
-        item.checked ? '✓ Confirmed' : '☐ Pending',
+    const rows = window.purchasingManifestItems.map((item, idx) => [
+        idx + 1,
         item.brand || '',
         item.name || '',
         item.color || 'Standard',
@@ -583,10 +579,11 @@ function exportPurchasingToExcel() {
         item.qty || 0,
         item.unit || '',
         item.price || '',
+        item.checked ? 'True' : 'X',
         item.notes || ''
     ]);
 
-    downloadCsv('Purchase_Requisition_Manifest', headers, rows);
+    downloadCsv('Purchase_Order', headers, rows);
     showToast('Purchase report exported to Excel successfully!', 'success');
 }
 

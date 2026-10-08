@@ -535,8 +535,8 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1.8fr; gap:28px;" class="responsive-split-grid">
-                <div style="display:flex; flex-direction:column; gap:24px;" class="no-print">
+            <div style="display:grid; grid-template-columns: 320px minmax(0, 1fr); gap:20px;" class="responsive-split-grid">
+                <div style="display:flex; flex-direction:column; gap:20px;" class="no-print">
                     <!-- Custom Line Item Adder -->
                     <div class="card">
                         <div class="card-header">
@@ -559,26 +559,26 @@
 
                             <div class="form-group">
                                 <label>Target Destination Branches</label>
-                                <select id="purchasingBranchMultiSelect" class="form-control" multiple style="height:95px;" required>
+                                <select id="purchasingBranchMultiSelect" class="form-control" multiple style="height:90px;" required>
                                     <!-- Populated dynamically -->
                                 </select>
                                 <small style="color:var(--text-muted); font-size:11.5px;">Hold Ctrl/Cmd to select multiple facilities.</small>
                             </div>
 
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                 <div class="form-group">
                                     <label>Order Quantity</label>
                                     <input type="number" step="any" min="0.01" id="purchasingQty" class="form-control" placeholder="0" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Color / Spec</label>
-                                    <input type="text" id="purchasingColor" class="form-control" placeholder="e.g. Red, 550MHz">
+                                    <input type="text" id="purchasingColor" class="form-control" placeholder="e.g. Standard, Red">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label>Logistics / Supplier Notes</label>
-                                <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier info, freight or purchase notes">
+                                <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier remarks or instructions">
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width:100%;">🛒 Add to Cart</button>
@@ -597,24 +597,24 @@
                 </div>
 
                 <!-- Active Purchasing Requisition Sheet Table -->
-                <div class="card">
+                <div class="card" style="min-width:0;">
                     <div class="card-header">
                         <h3 class="card-title">Active Purchasing Cart &amp; Requisition Sheet</h3>
                         <span class="badge badge-purple" id="purchasingListCount">0 items</span>
                     </div>
-                    <div class="table-responsive">
-                        <table id="purchasingTableSheet">
+                    <div class="table-responsive" style="overflow-x:auto;">
+                        <table id="purchasingTableSheet" style="width:100%;">
                             <thead>
                                 <tr>
-                                    <th style="width:45px; text-align:center;">✓ / ✗</th>
-                                    <th>Brand / Maker</th>
-                                    <th>Product Name</th>
-                                    <th>Color / Spec</th>
-                                    <th>Destination(s)</th>
-                                    <th>Order Qty</th>
-                                    <th style="width:85px;">Price ($)</th>
-                                    <th style="min-width:180px; width:25%;">Remarks / Notes</th>
-                                    <th class="action-column" style="text-align:right;">Action</th>
+                                    <th style="width:36px; text-align:center;">#</th>
+                                    <th style="min-width:90px;">Brand</th>
+                                    <th style="min-width:110px;">Product Name</th>
+                                    <th style="min-width:85px;">Color / Spec</th>
+                                    <th style="min-width:90px;">Destination(s)</th>
+                                    <th style="min-width:80px;">Order Qty</th>
+                                    <th style="width:75px;">Price ($)</th>
+                                    <th style="min-width:130px;">Remarks / Notes</th>
+                                    <th class="action-column" style="text-align:right; width:110px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="purchasingManifestTableBody">
