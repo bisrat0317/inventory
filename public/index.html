@@ -1603,9 +1603,12 @@
 
                 <!-- Action Buttons -->
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <div style="display:flex; gap:6px;">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="switchCameraFacingMode()" id="btnFlipCamera" title="Switch between Front and Back camera">
                             🔄 Flip
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleCameraTorch()" id="btnToggleTorch" title="Turn Flashlight ON/OFF" style="display:flex; align-items:center; gap:4px;">
+                            🔦 <span id="torchBtnLabel" data-i18n="scanner.torch_off">Light</span>
                         </button>
                         <label class="btn btn-secondary btn-sm" style="margin:0; cursor:pointer;" title="Upload an image from gallery or disk">
                             📁 Upload

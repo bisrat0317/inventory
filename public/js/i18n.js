@@ -366,7 +366,10 @@ const translations = {
         'scanner.capture_btn': 'Capture & Scan',
         'scanner.scanning': 'Reading Text...',
         'scanner.position_hint': 'Position label or text inside frame',
-        'scanner.camera_error': 'Camera permission required. You can also upload a photo below.'
+        'scanner.camera_error': 'Camera permission required. You can also upload a photo below.',
+        'scanner.torch_off': 'Light',
+        'scanner.torch_on': 'Light ON',
+        'scanner.torch_unsupported': 'Flashlight is not supported on this camera device.'
     },
     am: {
         // App Header & Branding
@@ -728,7 +731,10 @@ const translations = {
         'scanner.capture_btn': 'ፎቶ አንሳና ቃኝ',
         'scanner.scanning': 'ጽሑፍ በማንበብ ላይ...',
         'scanner.position_hint': 'ሌብሉን ወይም ጽሑፉን በፍሬሙ ውስጥ ያስተካክሉ',
-        'scanner.camera_error': 'የካሜራ ፈቃድ ያስፈልጋል። ከታች ፎቶ መስቀልም ይችላሉ።'
+        'scanner.camera_error': 'የካሜራ ፈቃድ ያስፈልጋል። ከታች ፎቶ መስቀልም ይችላሉ።',
+        'scanner.torch_off': 'መብራት',
+        'scanner.torch_on': 'መብራት በርቷል',
+        'scanner.torch_unsupported': 'በዚህ ካሜራ ላይ የእጅ ባትሪ አይሰራም።'
     }
 };
 

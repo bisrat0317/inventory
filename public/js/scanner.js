@@ -12,6 +12,8 @@ let barcodeDetector = null;
 let autoScanInterval = null;
 let lastMatchedProduct = null;
 
+let isTorchOn = false;
+
 // Initialize native BarcodeDetector if supported
 if ('BarcodeDetector' in window) {
     try {
@@ -30,6 +32,7 @@ if ('BarcodeDetector' in window) {
 async function openCameraScanner(context = 'stock-in') {
     scannerContext = context;
     lastMatchedProduct = null;
+    isTorchOn = false;
 
     const modal = document.getElementById('cameraScannerModal');
     const title = document.getElementById('scannerModalTitle');
@@ -62,6 +65,8 @@ async function openCameraScanner(context = 'stock-in') {
         statusText.textContent = t('scanner.position_hint', 'Position label or text inside frame');
         statusText.style.background = 'rgba(15, 23, 42, 0.88)';
     }
+
+    updateTorchButtonUI();
 
     if (modal) {
         modal.style.display = 'flex';
@@ -96,6 +101,9 @@ async function startCameraStream() {
         video.srcObject = scannerVideoStream;
         await video.play();
 
+        // Check if current camera device supports flashlight / torch
+        checkTorchSupport();
+
         // Start auto barcode detector loop if supported
         if (barcodeDetector) {
             startBarcodeScanningLoop();
@@ -111,6 +119,99 @@ async function startCameraStream() {
 }
 
 /**
+ * Check if camera device supports flashlight / torch
+ */
+function checkTorchSupport() {
+    const torchBtn = document.getElementById('btnToggleTorch');
+    if (!torchBtn) return false;
+
+    if (!scannerVideoStream) {
+        torchBtn.style.opacity = '0.5';
+        return false;
+    }
+
+    const videoTrack = scannerVideoStream.getVideoTracks()[0];
+    if (!videoTrack) {
+        torchBtn.style.opacity = '0.5';
+        return false;
+    }
+
+    const capabilities = typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {};
+    const hasTorch = Boolean(capabilities.torch);
+
+    if (hasTorch) {
+        torchBtn.style.opacity = '1';
+        torchBtn.title = 'Turn Flashlight ON/OFF';
+    } else {
+        // Front cameras or laptops without LED flash
+        torchBtn.style.opacity = '0.7';
+        torchBtn.title = t('scanner.torch_unsupported', 'Flashlight not supported on this camera');
+    }
+
+    updateTorchButtonUI();
+    return hasTorch;
+}
+
+/**
+ * Toggle flashlight (torch) ON / OFF
+ */
+async function toggleCameraTorch() {
+    if (!scannerVideoStream) {
+        showToast('Camera is not active.', 'warning');
+        return;
+    }
+
+    const videoTrack = scannerVideoStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    try {
+        const capabilities = typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {};
+        if (!capabilities.torch) {
+            showToast(t('scanner.torch_unsupported', 'Flashlight is not supported on this camera/device.'), 'warning');
+            return;
+        }
+
+        isTorchOn = !isTorchOn;
+        await videoTrack.applyConstraints({
+            advanced: [{ torch: isTorchOn }]
+        });
+
+        updateTorchButtonUI();
+        showToast(isTorchOn ? '🔦 ' + t('scanner.torch_on', 'Light ON') : '🔦 ' + t('scanner.torch_off', 'Light OFF'), 'info');
+    } catch (err) {
+        console.warn('Torch toggle error:', err);
+        showToast('Error toggling flashlight: ' + err.message, 'warning');
+    }
+}
+
+/**
+ * Update Flashlight button visual state
+ */
+function updateTorchButtonUI() {
+    const torchBtn = document.getElementById('btnToggleTorch');
+    const label = document.getElementById('torchBtnLabel');
+    if (!torchBtn) return;
+
+    if (isTorchOn) {
+        torchBtn.classList.remove('btn-secondary');
+        torchBtn.classList.add('btn-warning');
+        torchBtn.style.background = '#f59e0b';
+        torchBtn.style.borderColor = '#d97706';
+        torchBtn.style.color = '#000000';
+        torchBtn.style.fontWeight = '700';
+        if (label) label.textContent = t('scanner.torch_on', 'Light ON');
+    } else {
+        torchBtn.classList.remove('btn-warning');
+        torchBtn.classList.add('btn-secondary');
+        torchBtn.style.background = '';
+        torchBtn.style.borderColor = '';
+        torchBtn.style.color = '';
+        torchBtn.style.fontWeight = '';
+        if (label) label.textContent = t('scanner.torch_off', 'Light');
+    }
+}
+
+/**
  * Stop active camera stream and clean up
  */
 function stopCameraStream() {
@@ -121,10 +222,18 @@ function stopCameraStream() {
 
     if (scannerVideoStream) {
         scannerVideoStream.getTracks().forEach(track => {
-            try { track.stop(); } catch (e) {}
+            try { 
+                if (isTorchOn && typeof track.applyConstraints === 'function') {
+                    track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+                }
+                track.stop(); 
+            } catch (e) {}
         });
         scannerVideoStream = null;
     }
+
+    isTorchOn = false;
+    updateTorchButtonUI();
 
     const video = document.getElementById('scannerVideo');
     if (video) {
@@ -148,6 +257,7 @@ function closeCameraScanner() {
  * Switch camera between front and back
  */
 async function switchCameraFacingMode() {
+    isTorchOn = false;
     currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
     await startCameraStream();
 }
@@ -497,3 +607,5 @@ window.closeCameraScanner = closeCameraScanner;
 window.captureAndProcessFrame = captureAndProcessFrame;
 window.switchCameraFacingMode = switchCameraFacingMode;
 window.handleScannerPhotoUpload = handleScannerPhotoUpload;
+window.toggleCameraTorch = toggleCameraTorch;
+
