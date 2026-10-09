@@ -8,8 +8,8 @@ const STORAGE_LANG_KEY = 'stockmatrix_language';
 const translations = {
     en: {
         // App Header & Branding
-        'brand.name': 'StockMatrix',
-        'brand.tagline': 'Unified Inventory & Operations Engine',
+        'brand.name': 'MEDEBER',
+        'brand.tagline': 'Shop & Inventory System',
         'header.user_greeting': 'Hi,',
         'header.password': 'Password',
         'header.password_tooltip': 'Click to Change Password',
@@ -297,8 +297,8 @@ const translations = {
         'modal.admin_reset_hint': 'As an administrator, you can directly set or reset this account\'s password without knowing their old password.',
 
         // Login Page
-        'login.heading': 'StockMatrix Engine',
-        'login.subheading': 'Unified Enterprise Inventory & Logistics Hub',
+        'login.heading': 'MEDEBER',
+        'login.subheading': 'Shop & Inventory System',
         'login.username_label': 'Username',
         'login.username_placeholder': 'Enter username',
         'login.password_label': 'Password',
@@ -319,8 +319,8 @@ const translations = {
     },
     am: {
         // App Header & Branding
-        'brand.name': 'ስቶክማትሪክስ',
-        'brand.tagline': 'የተቀናጀ የክምችት እና የንግድ አስተዳደር ሲስተም',
+        'brand.name': 'መደብር',
+        'brand.tagline': 'የሱቅ እና የክምችት አስተዳደር ሲስተም',
         'header.user_greeting': 'ሰላም፣',
         'header.password': 'የይለፍ ቃል',
         'header.password_tooltip': 'የይለፍ ቃልዎን ለመቀየር ይጫኑ',
@@ -608,8 +608,8 @@ const translations = {
         'modal.admin_reset_hint': 'እንደ ሲስተም አስተዳዳሪ የድሮውን የይለፍ ቃል ሳያስፈልግዎት አዲስ የይለፍ ቃል በቀጥታ መመደብ ይችላሉ።',
 
         // Login Page
-        'login.heading': 'ስቶክማትሪክስ',
-        'login.subheading': 'የተቀናጀ የክምችት እና የሎጂስቲክስ አስተዳደር ሲስተም',
+        'login.heading': 'መደብር',
+        'login.subheading': 'የሱቅ እና የክምችት አስተዳደር ሲስተም',
         'login.username_label': 'የተጠቃሚ ስም',
         'login.username_placeholder': 'የተጠቃሚ ስምዎን ያስገቡ',
         'login.password_label': 'የይለፍ ቃል',

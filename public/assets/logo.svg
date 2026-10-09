@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 180" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@700;800&amp;family=Outfit:wght@600;700;800&amp;family=Inter:wght@500;600&amp;display=swap');
+      .logo-icon-stroke {
+        stroke: #E5A93C;
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .logo-icon-fill {
+        fill: #E5A93C;
+      }
+      .logo-text-amharic {
+        font-family: 'Noto Sans Ethiopic', 'Outfit', sans-serif;
+        font-size: 50px;
+        font-weight: 800;
+        letter-spacing: 2px;
+      }
+      .logo-text-title {
+        font-family: 'Outfit', -apple-system, sans-serif;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        fill: #E5A93C;
+      }
+      .logo-text-sub {
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        fill: #8E9BAE;
+      }
+    </style>
+    <!-- Outline text effect for Amharic text -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- ICON GROUP -->
+  <g transform="translate(10, 10)">
+    <!-- Top Left Box / Shelf Frame -->
+    <path class="logo-icon-stroke" d="M 35 45 L 90 45 L 90 100" />
+    <path class="logo-icon-stroke" d="M 35 45 L 35 95" />
+    <!-- Box slot / handle -->
+    <line class="logo-icon-stroke" x1="50" y1="58" x2="75" y2="58" stroke-width="7" />
+
+    <!-- Bottom Right Box Frame -->
+    <path class="logo-icon-stroke" d="M 75 105 L 75 135 L 135 135 L 135 95" />
+
+    <!-- Rising Chart Growth Arrow -->
+    <path class="logo-icon-stroke" d="M 30 125 L 72 82 L 94 102 L 138 48" stroke-width="9" />
+    <!-- Arrow Head -->
+    <path class="logo-icon-fill" d="M 142 44 L 118 48 L 132 62 Z" />
+    <path class="logo-icon-stroke" d="M 122 46 L 140 46 L 140 64" stroke-width="8" />
+  </g>
+
+  <!-- TEXT GROUP -->
+  <g transform="translate(180, 20)">
+    <!-- Amharic Title: መደብር -->
+    <text x="0" y="52" class="logo-text-amharic" fill="none" stroke="#E5A93C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">መደብር</text>
+    <text x="0" y="52" class="logo-text-amharic" fill="#FFFFFF" fill-opacity="0.9" opacity="0.95">መደብር</text>
+
+    <!-- English Title: MEDEBER -->
+    <text x="0" y="94" class="logo-text-title">MEDEBER</text>
+
+    <!-- Tagline: SHOP & INVENTORY System -->
+    <text x="0" y="122" class="logo-text-sub">SHOP &amp; INVENTORY System</text>
+  </g>
+</svg>

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StockMatrix - Unified Inventory Management System</title>
+    <title>MEDEBER - Shop &amp; Inventory System</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-icon.svg">
     
     <!-- Modern Typography (Inter, Noto Sans Ethiopic, Outfit) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,13 +23,16 @@
     <!-- Global Top Navigation Header -->
     <header class="app-header">
         <div class="header-left">
-            <div class="mobile-menu-btn" onclick="toggleMobileDrawer()">
+            <div class="mobile-menu-btn" onclick="toggleMobileDrawer()" title="Open Navigation Menu">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </div>
 
             <a href="#/dashboard" class="brand-badge" onclick="navigateTo('dashboard')">
-                <div class="brand-icon">I</div>
-                <span data-i18n="brand.name">StockMatrix</span>
+                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:34px; height:34px; flex-shrink:0;">
+                <div style="display:flex; flex-direction:column; line-height:1.15;">
+                    <span style="font-weight:800; font-size:16.5px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
+                    <span style="font-size:9.5px; color:#94A3B8; font-weight:600; letter-spacing:0.3px;" data-i18n="brand.tagline">Shop &amp; Inventory</span>
+                </div>
             </a>
 
             <nav class="nav-tabs" id="desktopNavTabs">
@@ -37,8 +41,8 @@
         </div>
 
         <div class="header-right">
-            <!-- Bilingual Language Switcher -->
-            <div class="lang-switch-container" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
+            <!-- Bilingual Language Switcher (Desktop Only) -->
+            <div class="lang-switch-container header-lang-switch hide-on-mobile" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
                 <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
                 <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
             </div>
@@ -47,53 +51,67 @@
                 <svg width="18" height="18" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             </button>
 
-            <div class="user-profile-widget" onclick="openChangePasswordModal()" title="Click to Change Password" data-i18n-title="header.password_tooltip" style="cursor:pointer;">
+            <!-- User profile widget (Desktop Only) -->
+            <div class="user-profile-widget header-user-profile hide-on-mobile" onclick="openChangePasswordModal()" title="Click to Change Password" data-i18n-title="header.password_tooltip" style="cursor:pointer;">
                 <span class="user-greeting"><span data-i18n="header.user_greeting">Hi,</span> <span id="currentUserName">User</span></span>
                 <span class="role-badge" id="currentUserRole">ADMIN</span>
             </div>
 
-            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" title="Change Your Password" data-i18n-title="header.password_tooltip" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+            <!-- Password Button (Desktop Only) -->
+            <button class="btn btn-secondary btn-sm header-password-btn hide-on-mobile" onclick="openChangePasswordModal()" title="Change Your Password" data-i18n-title="header.password_tooltip" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
                 <span>🔑</span>
-                <span class="hide-on-mobile" data-i18n="header.password">Password</span>
+                <span data-i18n="header.password">Password</span>
             </button>
 
-            <button class="btn-logout" onclick="handleLogout()" title="Sign Out" data-i18n-title="header.logout_tooltip">
+            <!-- Logout Button (Desktop Only) -->
+            <button class="btn-logout header-logout-btn hide-on-mobile" onclick="handleLogout()" title="Sign Out" data-i18n-title="header.logout_tooltip">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 <span style="display:inline-block;" data-i18n="header.logout">Logout</span>
             </button>
         </div>
     </header>
 
-    <!-- Mobile Slide-over Drawer -->
+    <!-- Mobile Slide-over Drawer (Sidebar for Phone/Tablet) -->
     <div class="mobile-drawer-overlay" id="mobileDrawerOverlay" onclick="toggleMobileDrawer()"></div>
     <aside class="mobile-drawer" id="mobileDrawer">
         <div class="drawer-header">
             <div class="brand-badge">
-                <div class="brand-icon">I</div>
-                <span data-i18n="brand.name">StockMatrix</span>
-            </div>
-            <button class="modal-close-btn" onclick="toggleMobileDrawer()">✕</button>
-        </div>
-        <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); flex-wrap:wrap; gap:8px;">
-            <div>
-                <div style="font-weight:700; font-size:14px;" id="drawerUserName">User</div>
-                <div style="font-size:12px; color:var(--text-muted);" id="drawerUserRole">ADMIN</div>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div class="lang-switch-container" style="background:var(--surface); border-color:var(--border-color);">
-                    <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
-                    <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
+                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:34px; height:34px;">
+                <div style="display:flex; flex-direction:column; line-height:1.15;">
+                    <span style="font-weight:800; font-size:17.5px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
+                    <span style="font-size:10px; color:var(--text-muted); font-weight:600;" data-i18n="brand.tagline">Shop &amp; Inventory</span>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="toggleMobileDrawer(); openChangePasswordModal();" style="font-size:12px;">
-                    🔑 <span data-i18n="header.password">Password</span>
-                </button>
+            </div>
+            <button class="modal-close-btn" onclick="toggleMobileDrawer()" title="Close Menu">✕</button>
+        </div>
+
+        <!-- User Profile & Language Switcher Banner in Side Bar -->
+        <div class="drawer-user-banner">
+            <div class="drawer-user-info">
+                <div class="drawer-user-avatar">👤</div>
+                <div>
+                    <div style="font-weight:700; font-size:14.5px; color:var(--text-primary);" id="drawerUserName">User</div>
+                    <span class="role-badge" style="font-size:10px; margin-top:3px; display:inline-block;" id="drawerUserRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="lang-switch-container drawer-lang-switch" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
+                <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
             </div>
         </div>
+
+        <!-- Navigation Links in Drawer -->
         <nav class="drawer-nav" id="mobileNavLinks">
-            <!-- Dynamically populated -->
+            <!-- Dynamically populated based on permitted menus -->
         </nav>
-        <div style="margin-top:auto; padding-top:16px; border-top:1px solid var(--border-color);">
-            <button class="btn btn-danger-outline" style="width:100%;" onclick="handleLogout()">
+
+        <!-- Drawer Footer (Password Change & Logout) -->
+        <div class="drawer-footer">
+            <button class="btn btn-secondary" style="width:100%; justify-content:center; gap:8px; margin-bottom:8px; min-height:42px;" onclick="toggleMobileDrawer(); openChangePasswordModal();">
+                <span>🔑</span>
+                <span data-i18n="header.password">Change Password</span>
+            </button>
+            <button class="btn btn-danger-outline" style="width:100%; justify-content:center; gap:8px; min-height:42px;" onclick="handleLogout()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 <span data-i18n="header.logout">Logout Account</span>
             </button>

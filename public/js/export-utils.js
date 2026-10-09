@@ -259,7 +259,7 @@ function printPurchaseManifest() {
         </div>
 
         <div class="doc-footer">
-            <div>StockMatrix Inventory Management System</div>
+            <div>MEDEBER - Shop &amp; Inventory System (መደብር)</div>
             <div>Official Purchasing Requisition Sheet</div>
         </div>
     `;
@@ -436,7 +436,7 @@ function printExecutiveReport() {
                 </div>
                 <div class="doc-meta">
                     <div><strong>Generated:</strong> ${dateFormatted} at ${timeFormatted}</div>
-                    <div><strong>System:</strong> StockMatrix Executive Engine</div>
+                    <div><strong>System:</strong> MEDEBER Executive Engine</div>
                 </div>
             </div>
         </div>
@@ -447,7 +447,7 @@ function printExecutiveReport() {
         ${remainingTableHtml}
 
         <div class="doc-footer">
-            <div>StockMatrix Business Intelligence</div>
+            <div>MEDEBER - Shop &amp; Inventory System (መደብር)</div>
             <div>Executive Management Report · Confidential</div>
         </div>
     `;
@@ -512,7 +512,7 @@ function printProductCatalog() {
         </table>
 
         <div class="doc-footer">
-            <div>StockMatrix Inventory Management System</div>
+            <div>MEDEBER - Shop &amp; Inventory System (መደብር)</div>
             <div>Product Catalog Report</div>
         </div>
     `;

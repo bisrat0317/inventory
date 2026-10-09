@@ -381,6 +381,45 @@ body.lang-am,
     border-bottom: 1px solid var(--border-color);
 }
 
+.drawer-user-banner {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    margin-bottom: 18px;
+    gap: 8px;
+}
+
+.drawer-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.drawer-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    border: 1.5px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.drawer-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
 .drawer-nav {
     display: flex;
     flex-direction: column;
@@ -1233,18 +1272,27 @@ tr:hover td {
     grid-template-columns: 1fr 1fr;
 }
 
-/* Tablet Breakpoints (<= 1024px) */
+/* Tablet & Mobile Breakpoints (<= 1024px) */
 @media (max-width: 1024px) {
     .app-header {
         padding: 0 16px;
     }
 
     .nav-tabs {
-        display: none; /* Collapses to mobile drawer on tablets and phones */
+        display: none !important; /* Collapses to mobile drawer on tablets and phones */
     }
 
     .mobile-menu-btn {
-        display: flex;
+        display: flex !important;
+    }
+
+    /* On mobile/tablet view: remove password, logout, and en/am buttons from top bar */
+    .header-lang-switch,
+    .header-password-btn,
+    .header-logout-btn,
+    .header-user-profile,
+    .hide-on-mobile {
+        display: none !important;
     }
 
     .user-greeting {
