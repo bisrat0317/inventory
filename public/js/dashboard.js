@@ -163,18 +163,24 @@ async function renderBranchOpsView(branchId) {
         const lowStockList = document.getElementById('opsLowStockAlertsList');
         const lowStockCountBadge = document.getElementById('opsLowStockCount');
         if (lowStockList) {
-            lowStockCountBadge.textContent = `${data.lowStockAlerts.length} items`;
+            lowStockCountBadge.textContent = `${data.lowStockAlerts.length} ${t('dash.lines_count', 'items')}`;
             if (data.lowStockAlerts.length === 0) {
-                lowStockList.innerHTML = `<div style="text-align:center; padding:18px; color:var(--success); font-weight:600; font-size:13px;">✓ All assets above baseline safety thresholds.</div>`;
+                lowStockList.innerHTML = `<div style="text-align:center; padding:18px; color:var(--success); font-weight:600; font-size:13px;">✓ ${t('dash.empty_low_stock', 'All assets above baseline safety thresholds.')}</div>`;
             } else {
                 lowStockList.innerHTML = data.lowStockAlerts.map(alert => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:var(--radius-md); font-size:13.5px;">
-                        <div>
-                            <span style="font-weight:600; color:var(--text-primary);">${escapeHtml(alert.brand ? alert.brand + ' - ' : '')}${escapeHtml(alert.name)}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 14px; background:var(--surface); border:1px solid var(--border-color); border-left:4px solid var(--danger); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); gap:12px;">
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:700; color:var(--text-primary); font-size:13.5px;">
+                                ${escapeHtml(alert.brand ? alert.brand + ' – ' : '')}${escapeHtml(alert.name)}
+                            </div>
+                            <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px;">
+                                Threshold: &le; <strong style="color:var(--text-secondary);">${formatQuantity(alert.min_stock_alert || 5)} ${escapeHtml(alert.symbol || '')}</strong>
+                            </div>
                         </div>
-                        <div style="text-align:right;">
-                            <span style="color:var(--danger); font-weight:700;">${formatQuantity(alert.quantity)} ${escapeHtml(alert.symbol || '')}</span>
-                            <div style="font-size:11px; color:var(--text-muted);">Threshold: &le; ${alert.min_stock_alert || 5} ${escapeHtml(alert.symbol || '')}</div>
+                        <div style="text-align:right; flex-shrink:0;">
+                            <span class="badge badge-red" style="font-size:13px; font-weight:800; padding:4px 10px;">
+                                ${formatQuantity(alert.quantity)} ${escapeHtml(alert.symbol || '')}
+                            </span>
                         </div>
                     </div>
                 `).join('');
@@ -245,6 +251,10 @@ async function renderBranchOpsView(branchId) {
                     </div>
                 `).join('');
             }
+        }
+
+        if (typeof window.applyTranslations === 'function') {
+            window.applyTranslations();
         }
 
     } catch (err) {

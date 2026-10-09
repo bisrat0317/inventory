@@ -145,7 +145,7 @@
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-danger-outline" onclick="openDamagedStockModal(activeBranchOpsId)">
-                        ⚠️ <span data-i18n="table.status">Register Damaged / Lost Items</span>
+                        ⚠️ <span data-i18n="damaged.btn_register">Register Damaged / Lost Items</span>
                     </button>
                     <button class="btn btn-secondary" onclick="navigateTo('dashboard')">
                         ← <span data-i18n="nav.dashboard">Back to Overview</span>
@@ -155,20 +155,20 @@
 
             <div class="filter-bar">
                 <div class="form-group">
-                    <label for="opsRangeType" data-i18n="table.date">Time Window Scope</label>
+                    <label for="opsRangeType" data-i18n="reports.time_period">Time Window Scope</label>
                     <select id="opsRangeType" class="form-control" onchange="handleBranchOpsFilterChange()">
                         <option value="today" data-i18n="reports.period_today">Today (Live Feed)</option>
-                        <option value="weekly" data-i18n="reports.period_7d">Current Week</option>
-                        <option value="monthly" data-i18n="reports.period_month">Current Month</option>
-                        <option value="custom">Custom Range Window</option>
+                        <option value="weekly" data-i18n="reports.period_weekly">Current Week</option>
+                        <option value="monthly" data-i18n="reports.period_monthly">Current Month</option>
+                        <option value="custom" data-i18n="reports.period_custom">Custom Range Window</option>
                     </select>
                 </div>
                 <div class="form-group" id="opsCustomStartGroup" style="display:none;">
-                    <label for="opsStartDate" data-i18n="reports.period_all">Start Target Date</label>
+                    <label for="opsStartDate" data-i18n="reports.start_date">Start Target Date</label>
                     <input type="date" id="opsStartDate" class="form-control" onchange="handleBranchOpsFilterChange()">
                 </div>
                 <div class="form-group" id="opsCustomEndGroup" style="display:none;">
-                    <label for="opsEndDate">End Target Date (Optional)</label>
+                    <label for="opsEndDate" data-i18n="reports.end_date">End Target Date (Optional)</label>
                     <input type="date" id="opsEndDate" class="form-control" onchange="handleBranchOpsFilterChange()">
                 </div>
             </div>
@@ -719,6 +719,10 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         <span data-i18n="reports.print_report">Print Report</span>
                     </button>
+                    <button class="btn btn-primary" onclick="scrollToBackupSection()" data-i18n-title="backup.title" style="background:#2563eb; border-color:#2563eb;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span data-i18n="backup.title">💾 DB &amp; Excel Backup</span>
+                    </button>
                 </div>
             </div>
 
@@ -938,6 +942,88 @@
                         </thead>
                         <tbody id="reportsRemainingInventoryTableBody"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- System Backups & Enterprise Data Export Card -->
+            <div class="card" id="backupManagementSection" style="margin-top:24px; border-left:4px solid var(--primary); background:var(--surface);">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h3 class="card-title" style="display:flex; align-items:center; gap:8px;" data-i18n="backup.title">
+                            💾 Database &amp; Excel System Backups
+                        </h3>
+                        <p style="font-size:13px; color:var(--text-secondary); margin-top:3px;" data-i18n="backup.subtitle">
+                            Download SQL database dumps, multi-sheet Excel workbooks, or send automated backups to your email.
+                        </p>
+                    </div>
+                    <div id="backupLastStatusBadge" style="font-size:12px; color:var(--text-muted); background:var(--surface-hover); padding:6px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                        Status: Ready
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:14px;">
+                    <!-- Manual Direct Downloads -->
+                    <div style="padding:16px; background:var(--surface-hover); border-radius:var(--radius-md); border:1px solid var(--border-color); display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+                        <div>
+                            <h4 style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">📥 Manual Direct Downloads</h4>
+                            <p style="font-size:12px; color:var(--text-muted);">Instantly export all tables and live warehouse records to your device.</p>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <a href="/api/backup/download/sql" class="btn btn-secondary" style="justify-content:center; text-decoration:none;" download>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                <span data-i18n="backup.download_db">📥 Download SQL Database Dump</span>
+                            </a>
+                            <a href="/api/backup/download/excel" class="btn btn-secondary" style="justify-content:center; text-decoration:none;" download>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                <span data-i18n="backup.download_excel">📊 Download Complete Excel Workbook (.xlsx)</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Instant Email Dispatch -->
+                    <div style="padding:16px; background:var(--surface-hover); border-radius:var(--radius-md); border:1px solid var(--border-color); display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+                        <div>
+                            <h4 style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">📧 Send Backup to Email Now</h4>
+                            <p style="font-size:12px; color:var(--text-muted);">Sends both SQL dump and multi-sheet Excel file as attachments to any email.</p>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="form-group" style="margin:0;">
+                                <input type="email" id="backupInstantEmailInput" class="form-control" placeholder="Enter recipient email..." style="font-size:13px; padding:8px 12px;">
+                            </div>
+                            <button class="btn btn-primary" id="btnSendBackupEmailNow" onclick="triggerEmailBackupNow()" style="justify-content:center;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                <span data-i18n="backup.email_backup_now">📧 Send Backup to Email Now</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Automated Schedule Settings -->
+                    <div style="padding:16px; background:var(--surface-hover); border-radius:var(--radius-md); border:1px solid var(--border-color); display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+                        <div>
+                            <h4 style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">⚙️ Automated Schedule Settings</h4>
+                            <p style="font-size:12px; color:var(--text-muted);">Set recurring automatic email backups at midnight or weekly intervals.</p>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <div>
+                                    <label style="font-size:11px; color:var(--text-muted); font-weight:600;" data-i18n="backup.auto_schedule">Schedule</label>
+                                    <select id="backupScheduleFreqSelect" class="form-control" style="font-size:12px; padding:6px 10px;">
+                                        <option value="disabled" data-i18n="backup.schedule_disabled">Disabled</option>
+                                        <option value="daily" data-i18n="backup.schedule_daily">Daily (00:00)</option>
+                                        <option value="weekly" data-i18n="backup.schedule_weekly">Weekly (Sunday)</option>
+                                        <option value="monthly">Monthly (1st)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:11px; color:var(--text-muted); font-weight:600;" data-i18n="backup.recipient_email">Recipient Email</label>
+                                    <input type="email" id="backupScheduleEmailInput" class="form-control" placeholder="admin@example.com" style="font-size:12px; padding:6px 10px;">
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="saveBackupScheduleSettings()" style="justify-content:center;">
+                                <span data-i18n="backup.save_settings">💾 Save Backup Settings</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1464,6 +1550,7 @@
     <script src="/js/accounts.js"></script>
     <script src="/js/reports.js"></script>
     <script src="/js/purchasing.js"></script>
+    <script src="/js/backup.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

@@ -15,6 +15,8 @@ const productRoutes = require('./routes/productRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const backupRoutes = require('./routes/backupRoutes');
+const backupController = require('./controllers/backupController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,6 +68,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/backup', backupRoutes);
 
 // Root Navigation Handler
 app.get('/', (req, res) => {
@@ -103,6 +106,17 @@ if (!process.env.VERCEL) {
         console.log(`========================================================\n`);
 
         await db.testConnectionAndAutoSetup();
+
+        // Start automated backup scheduler (checks every 30 minutes)
+        setInterval(() => {
+            backupController.checkAndRunScheduledBackup().catch(err => {
+                console.error('Scheduled backup error:', err.message);
+            });
+        }, 30 * 60 * 1000);
+        // Initial check after startup
+        setTimeout(() => {
+            backupController.checkAndRunScheduledBackup().catch(() => {});
+        }, 15000);
     });
 }
 

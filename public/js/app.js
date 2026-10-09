@@ -264,6 +264,7 @@ function handleRoute() {
                 repView.style.display = 'block';
                 repView.classList.add('active');
                 if (window.loadExecutiveReports) window.loadExecutiveReports();
+                if (window.loadBackupSettings) window.loadBackupSettings();
             }
             break;
 
