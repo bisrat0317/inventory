@@ -35,7 +35,7 @@ function renderBranchesList() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="empty-state-cell" style="text-align:center; padding:32px; color:var(--text-muted);">
-                    No branch locations added yet. Click "Add New Branch" above to get started.
+                    ${t('branches.empty_state', 'No branch locations added yet. Click "Add New Branch" above to get started.')}
                 </td>
             </tr>
         `;
@@ -48,34 +48,34 @@ function renderBranchesList() {
     tbody.innerHTML = branchesCache.map(b => {
         const unitsOnFloor = parseFloat(b.global_units_on_floor || 0);
         const categoryBadge = b.type === 2 
-            ? '<span class="badge badge-emerald">Construction Supply</span>' 
-            : '<span class="badge badge-blue">Mobile Repair & Electronics</span>';
+            ? `<span class="badge badge-emerald">${t('cat.construction', 'Construction Supply')}</span>` 
+            : `<span class="badge badge-blue">${t('cat.mobile_repair', 'Mobile Repair & Electronics')}</span>`;
 
         return `
             <tr>
-                <td data-label="Branch Name" class="card-main-title">
+                <td data-label="${t('branches.table_name', 'Branch Name')}" class="card-main-title">
                     <div style="font-weight:700; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
                         <span>🏢</span>
                         <span>${escapeHtml(b.name)}</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Branch ID #${b.id}</div>
                 </td>
-                <td data-label="Category">${categoryBadge}</td>
-                <td data-label="Location" style="color:var(--text-secondary);">
-                    ${b.location ? `📍 ${escapeHtml(b.location)}` : '<span style="color:var(--text-muted);">No address set</span>'}
+                <td data-label="${t('branches.table_category', 'Category')}">${categoryBadge}</td>
+                <td data-label="${t('branches.table_location', 'Location')}" style="color:var(--text-secondary);">
+                    ${b.location ? `📍 ${escapeHtml(b.location)}` : `<span style="color:var(--text-muted);">${t('branches.no_address', 'No address set')}</span>`}
                 </td>
-                <td data-label="Items In Stock">
+                <td data-label="${t('branches.table_items', 'Items In Stock')}">
                     <span class="badge ${unitsOnFloor > 0 ? 'badge-blue' : 'badge-slate'}" style="font-size:13px; font-weight:600;">
-                        ${formatNumber(unitsOnFloor)} Items in Stock
+                        ${formatNumber(unitsOnFloor)} ${t('table.stock', 'Items in Stock')}
                     </span>
                 </td>
-                <td data-label="Actions" class="actions-cell">
+                <td data-label="${t('table.actions', 'Actions')}" class="actions-cell">
                     ${canManage ? `
                         <div style="display:inline-flex; gap:8px; width:100%; justify-content:flex-end;">
-                            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="openEditBranchModal(${b.id})">Edit</button>
-                            <button class="btn btn-danger-outline" style="padding:6px 12px; font-size:12px;" onclick="deleteBranch(${b.id}, ${unitsOnFloor})">Delete Branch</button>
+                            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="openEditBranchModal(${b.id})">${t('action.edit', 'Edit')}</button>
+                            <button class="btn btn-danger-outline" style="padding:6px 12px; font-size:12px;" onclick="deleteBranch(${b.id}, ${unitsOnFloor})">${t('action.delete', 'Delete Branch')}</button>
                         </div>
-                    ` : '<span style="color:var(--text-muted); font-size:12px;">Admin Only</span>'}
+                    ` : `<span style="color:var(--text-muted); font-size:12px;">${t('role.admin_desc', 'Admin Only')}</span>`}
                 </td>
             </tr>
         `;

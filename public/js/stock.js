@@ -28,7 +28,7 @@ function formatDualStock(quantity, unitSymbol = '', unitName = '') {
             <div style="display:inline-flex; flex-direction:column; gap:2px;">
                 <div>${baseDisplay}</div>
                 <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
-                    &asymp; ${scks} sck (${qtls} qtl)
+                    &asymp; ${scks} ${t('stock.sck', 'sck')} (${qtls} ${t('stock.qtl', 'qtl')})
                 </div>
             </div>
         `;
@@ -41,7 +41,7 @@ function formatDualStock(quantity, unitSymbol = '', unitName = '') {
             <div style="display:inline-flex; flex-direction:column; gap:2px;">
                 <div>${baseDisplay}</div>
                 <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
-                    &asymp; ${rolls} rolls (100m/roll)
+                    &asymp; ${rolls} ${t('stock.rolls', 'rolls')} (100m/${t('stock.roll', 'roll')})
                 </div>
             </div>
         `;
@@ -54,7 +54,7 @@ function formatDualStock(quantity, unitSymbol = '', unitName = '') {
             <div style="display:inline-flex; flex-direction:column; gap:2px;">
                 <div>${baseDisplay}</div>
                 <div style="font-size:11px; color:var(--text-muted); font-weight:500;">
-                    &asymp; ${buckets} bkt (20L/bkt)
+                    &asymp; ${buckets} ${t('stock.bkt', 'bkt')} (20L/${t('stock.bkt', 'bkt')})
                 </div>
             </div>
         `;
@@ -188,7 +188,7 @@ function renderStockInProductOptions(products) {
     if (!list) return;
 
     if (products.length === 0) {
-        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products in this branch category</div>';
+        list.innerHTML = `<div class="search-select-option" style="color:var(--text-muted); cursor:default;">${t('stock.no_products_branch', 'No matching products in this branch category')}</div>`;
         return;
     }
 
@@ -197,12 +197,12 @@ function renderStockInProductOptions(products) {
             <div>
                 <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
                 <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">
-                    ${p.type === 1 ? 'Electronics' : 'Construction'}
+                    ${p.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}
                 </span>
             </div>
             <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-                Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
-                ${p.color ? ` &bull; Color: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
+                ${t('modal.prod_unit', 'Base Unit')}: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                ${p.color ? ` &bull; ${t('table.color', 'Color')}: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
             </div>
         </div>
     `).join('');
@@ -299,34 +299,39 @@ function onStockInFactorInput() {
     // User freely types conversion factor
 }
 
+let stockInInventoryCache = [];
+let stockOutInventoryCache = [];
+
 function renderStockInInventoryTable(items) {
+    if (items) stockInInventoryCache = items;
+    const currentItems = items || stockInInventoryCache || [];
     const tbody = document.getElementById('stockInInventoryTableBody');
     if (!tbody) return;
 
-    if (items.length === 0) {
+    if (currentItems.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
-                    No live inventory records in this facility.
+                    ${t('stock.no_live_inventory', 'No live inventory records in this facility.')}
                 </td>
             </tr>
         `;
         return;
     }
 
-    tbody.innerHTML = items.map(item => {
+    tbody.innerHTML = currentItems.map(item => {
         const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
-            <td data-label="ID" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
-            <td data-label="Brand"><strong>${escapeHtml(item.brand)}</strong></td>
-            <td class="card-main-title" data-label="Product Nomenclature" style="font-weight:700;">${escapeHtml(item.name)}</td>
-            <td data-label="Category"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td data-label="Stock on Hand"><strong style="color:var(--primary);">${formatDualStock(item.total_quantity, unitSymbol, item.unit_name)}</strong></td>
-            <td data-label="Color">
-                ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
+            <td data-label="${t('table.id', 'ID')}" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
+            <td data-label="${t('table.brand', 'Brand')}"><strong>${escapeHtml(item.brand)}</strong></td>
+            <td class="card-main-title" data-label="${t('table.product', 'Product')}" style="font-weight:700;">${escapeHtml(item.name)}</td>
+            <td data-label="${t('table.category', 'Category')}"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}</span></td>
+            <td data-label="${t('stockin.th_stock_on_hand', 'Stock on Hand')}"><strong style="color:var(--primary);">${formatDualStock(item.total_quantity, unitSymbol, item.unit_name)}</strong></td>
+            <td data-label="${t('table.color', 'Color')}">
+                ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : `<span style="color:var(--text-muted); font-size:12px;">${t('general.default', 'Default')}</span>`}
             </td>
-            <td data-label="Description" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
+            <td data-label="${t('table.desc', 'Description')}" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
         </tr>
     `}).join('');
 }
@@ -459,7 +464,7 @@ function renderStockOutProductOptions(products) {
     if (!list) return;
 
     if (products.length === 0) {
-        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products in this branch category</div>';
+        list.innerHTML = `<div class="search-select-option" style="color:var(--text-muted); cursor:default;">${t('stock.no_products_branch', 'No matching products in this branch category')}</div>`;
         return;
     }
 
@@ -468,8 +473,8 @@ function renderStockOutProductOptions(products) {
         const unit = p.unit_symbol || p.unit_name || '';
         const minAlert = parseFloat(p.min_stock_alert !== undefined ? p.min_stock_alert : 5);
         const qtyBadge = qty <= 0 
-            ? `<span class="badge badge-red" style="font-size:10px; margin-left:6px;">Out of Stock</span>`
-            : `<span class="badge ${qty <= minAlert ? 'badge-amber font-bold' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">${formatNumber(qty, unit)} ${escapeHtml(unit)} available</span>`;
+            ? `<span class="badge badge-red" style="font-size:10px; margin-left:6px;">${t('prod.stock_out', 'Out of Stock')}</span>`
+            : `<span class="badge ${qty <= minAlert ? 'badge-amber font-bold' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">${formatNumber(qty, unit)} ${escapeHtml(unit)} ${t('stockout.available_suffix', 'available')}</span>`;
 
         return `
             <div class="search-select-option" onclick="selectStockOutProduct(${p.id})">
@@ -477,14 +482,14 @@ function renderStockOutProductOptions(products) {
                     <div>
                         <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
                         <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
-                            ${p.type === 1 ? 'Electronics' : 'Construction'}
+                            ${p.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}
                         </span>
                     </div>
                     <div>${qtyBadge}</div>
                 </div>
                 <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-                    Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
-                    ${p.color ? ` &bull; Color: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
+                    ${t('modal.prod_unit', 'Base Unit')}: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                    ${p.color ? ` &bull; ${t('table.color', 'Color')}: <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${p.color}; vertical-align:middle;"></span> ${escapeHtml(p.color)}` : ''}
                 </div>
             </div>
         `;
@@ -629,34 +634,36 @@ function onStockOutFactorInput() {
 }
 
 function renderStockOutInventoryTable(items) {
+    if (items) stockOutInventoryCache = items;
+    const currentItems = items || stockOutInventoryCache || [];
     const tbody = document.getElementById('stockOutInventoryTableBody');
     if (!tbody) return;
 
-    if (items.length === 0) {
+    if (currentItems.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
-                    No live inventory on shelves in this branch facility.
+                    ${t('stock.no_live_shelf', 'No live inventory on shelves in this branch facility.')}
                 </td>
             </tr>
         `;
         return;
     }
 
-    tbody.innerHTML = items.map(item => {
+    tbody.innerHTML = currentItems.map(item => {
         const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
-            <td data-label="ID" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
-            <td class="card-main-title" data-label="Product Title" style="font-weight:700;">${escapeHtml(item.name)}</td>
-            <td data-label="Brand"><strong>${escapeHtml(item.brand)}</strong></td>
-            <td data-label="Category"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td data-label="Unit">${escapeHtml(unitSymbol)}</td>
-            <td data-label="Available Stock"><strong style="color:var(--success);">${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</strong></td>
-            <td data-label="Color">
-                ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
+            <td data-label="${t('table.id', 'ID')}" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
+            <td class="card-main-title" data-label="${t('table.product', 'Product')}" style="font-weight:700;">${escapeHtml(item.name)}</td>
+            <td data-label="${t('table.brand', 'Brand')}"><strong>${escapeHtml(item.brand)}</strong></td>
+            <td data-label="${t('table.category', 'Category')}"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}</span></td>
+            <td data-label="${t('modal.prod_unit', 'Unit')}">${escapeHtml(unitSymbol)}</td>
+            <td data-label="${t('stockout.th_available_stock', 'Available Stock')}"><strong style="color:var(--success);">${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</strong></td>
+            <td data-label="${t('table.color', 'Color')}">
+                ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : `<span style="color:var(--text-muted); font-size:12px;">${t('general.default', 'Default')}</span>`}
             </td>
-            <td data-label="Description" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
+            <td data-label="${t('table.desc', 'Description')}" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
         </tr>
     `}).join('');
 }
@@ -809,7 +816,7 @@ function renderDamagedProductOptions(products) {
     if (!list) return;
 
     if (products.length === 0) {
-        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products in this branch</div>';
+        list.innerHTML = `<div class="search-select-option" style="color:var(--text-muted); cursor:default;">${t('stock.no_products_branch', 'No matching products in this branch')}</div>`;
         return;
     }
 
@@ -823,15 +830,15 @@ function renderDamagedProductOptions(products) {
                     <div>
                         <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
                         <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
-                            ${p.type === 1 ? 'Electronics' : 'Construction'}
+                            ${p.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}
                         </span>
                     </div>
                     <span class="badge ${qty <= 0 ? 'badge-red' : 'badge-emerald'}" style="font-size:10px;">
-                        ${formatNumber(qty, unit)} ${escapeHtml(unit)} in stock
+                        ${formatNumber(qty, unit)} ${escapeHtml(unit)} ${t('stockout.available_suffix', 'in stock')}
                     </span>
                 </div>
                 <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-                    Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                    ${t('modal.prod_unit', 'Base Unit')}: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
                 </div>
             </div>
         `;
@@ -1077,3 +1084,8 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// Expose table renderers for reactive i18n
+window.renderStockInInventoryTable = renderStockInInventoryTable;
+window.renderStockOutInventoryTable = renderStockOutInventoryTable;
+

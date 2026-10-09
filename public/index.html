@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StockMatrix - Unified Inventory Management System</title>
     
-    <!-- Modern Typography -->
+    <!-- Modern Typography (Inter, Noto Sans Ethiopic, Outfit) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Chart.js for Executive Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,7 +28,7 @@
 
             <a href="#/dashboard" class="brand-badge" onclick="navigateTo('dashboard')">
                 <div class="brand-icon">I</div>
-                <span>StockMatrix</span>
+                <span data-i18n="brand.name">StockMatrix</span>
             </a>
 
             <nav class="nav-tabs" id="desktopNavTabs">
@@ -37,23 +37,29 @@
         </div>
 
         <div class="header-right">
-            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <!-- Bilingual Language Switcher -->
+            <div class="lang-switch-container" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
+                <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
+            </div>
+
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" data-i18n-title="header.theme_toggle">
                 <svg width="18" height="18" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             </button>
 
-            <div class="user-profile-widget" onclick="openChangePasswordModal()" title="Click to Change Password" style="cursor:pointer;">
-                <span class="user-greeting">Hi, <span id="currentUserName">User</span></span>
+            <div class="user-profile-widget" onclick="openChangePasswordModal()" title="Click to Change Password" data-i18n-title="header.password_tooltip" style="cursor:pointer;">
+                <span class="user-greeting"><span data-i18n="header.user_greeting">Hi,</span> <span id="currentUserName">User</span></span>
                 <span class="role-badge" id="currentUserRole">ADMIN</span>
             </div>
 
-            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" title="Change Your Password" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" title="Change Your Password" data-i18n-title="header.password_tooltip" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
                 <span>🔑</span>
-                <span class="hide-on-mobile">Password</span>
+                <span class="hide-on-mobile" data-i18n="header.password">Password</span>
             </button>
 
-            <button class="btn-logout" onclick="handleLogout()" title="Sign Out">
+            <button class="btn-logout" onclick="handleLogout()" title="Sign Out" data-i18n-title="header.logout_tooltip">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                <span style="display:inline-block;">Logout</span>
+                <span style="display:inline-block;" data-i18n="header.logout">Logout</span>
             </button>
         </div>
     </header>
@@ -64,18 +70,24 @@
         <div class="drawer-header">
             <div class="brand-badge">
                 <div class="brand-icon">I</div>
-                <span>StockMatrix</span>
+                <span data-i18n="brand.name">StockMatrix</span>
             </div>
             <button class="modal-close-btn" onclick="toggleMobileDrawer()">✕</button>
         </div>
-        <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary);">
+        <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); flex-wrap:wrap; gap:8px;">
             <div>
                 <div style="font-weight:700; font-size:14px;" id="drawerUserName">User</div>
                 <div style="font-size:12px; color:var(--text-muted);" id="drawerUserRole">ADMIN</div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="toggleMobileDrawer(); openChangePasswordModal();" style="font-size:12px;">
-                🔑 Password
-            </button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="lang-switch-container" style="background:var(--surface); border-color:var(--border-color);">
+                    <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                    <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="toggleMobileDrawer(); openChangePasswordModal();" style="font-size:12px;">
+                    🔑 <span data-i18n="header.password">Password</span>
+                </button>
+            </div>
         </div>
         <nav class="drawer-nav" id="mobileNavLinks">
             <!-- Dynamically populated -->
@@ -83,7 +95,7 @@
         <div style="margin-top:auto; padding-top:16px; border-top:1px solid var(--border-color);">
             <button class="btn btn-danger-outline" style="width:100%;" onclick="handleLogout()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                Logout Account
+                <span data-i18n="header.logout">Logout Account</span>
             </button>
         </div>
     </aside>
@@ -97,8 +109,8 @@
         <section id="view-dashboard" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Operational Hub Overview</h1>
-                    <p>Monitor global branch network capacities, safety thresholds, and realized sales updates in real-time.</p>
+                    <h1 data-i18n="dash.title">Operational Hub Overview</h1>
+                    <p data-i18n="dash.subtitle">Monitor global branch network capacities, safety thresholds, and realized sales updates in real-time.</p>
                 </div>
             </div>
             <div class="grid-branches" id="dashboardBranchesGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:24px;">
@@ -115,26 +127,26 @@
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-danger-outline" onclick="openDamagedStockModal(activeBranchOpsId)">
-                        ⚠️ Register Damaged / Lost Items
+                        ⚠️ <span data-i18n="table.status">Register Damaged / Lost Items</span>
                     </button>
                     <button class="btn btn-secondary" onclick="navigateTo('dashboard')">
-                        ← Back to Overview
+                        ← <span data-i18n="nav.dashboard">Back to Overview</span>
                     </button>
                 </div>
             </div>
 
             <div class="filter-bar">
                 <div class="form-group">
-                    <label for="opsRangeType">Time Window Scope</label>
+                    <label for="opsRangeType" data-i18n="table.date">Time Window Scope</label>
                     <select id="opsRangeType" class="form-control" onchange="handleBranchOpsFilterChange()">
-                        <option value="today">Today (Live Feed)</option>
-                        <option value="weekly">Current Week</option>
-                        <option value="monthly">Current Month</option>
+                        <option value="today" data-i18n="reports.period_today">Today (Live Feed)</option>
+                        <option value="weekly" data-i18n="reports.period_7d">Current Week</option>
+                        <option value="monthly" data-i18n="reports.period_month">Current Month</option>
                         <option value="custom">Custom Range Window</option>
                     </select>
                 </div>
                 <div class="form-group" id="opsCustomStartGroup" style="display:none;">
-                    <label for="opsStartDate">Start Target Date</label>
+                    <label for="opsStartDate" data-i18n="reports.period_all">Start Target Date</label>
                     <input type="date" id="opsStartDate" class="form-control" onchange="handleBranchOpsFilterChange()">
                 </div>
                 <div class="form-group" id="opsCustomEndGroup" style="display:none;">
@@ -144,7 +156,7 @@
             </div>
 
             <div class="kpi-card" style="margin-bottom:24px; --kpi-accent:var(--success);">
-                <div class="kpi-label">Realized Sales Revenue (<span id="opsTimelineBadge">Today</span>)</div>
+                <div class="kpi-label"><span data-i18n="reports.revenue">Realized Sales Revenue</span> (<span id="opsTimelineBadge">Today</span>)</div>
                 <div class="kpi-value" style="color:var(--success);" id="opsRangeSalesValue">$0.00</div>
             </div>
 
@@ -152,15 +164,15 @@
                 <!-- Left: Live Inventory Balance -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Live Shelf Balances</h3>
+                        <h3 class="card-title" data-i18n="reports.inventory_title">Live Shelf Balances</h3>
                     </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Product Profile</th>
-                                    <th>Category</th>
-                                    <th>Balance</th>
+                                    <th data-i18n="table.product">Product Profile</th>
+                                    <th data-i18n="table.category">Category</th>
+                                    <th data-i18n="table.stock">Balance</th>
                                 </tr>
                             </thead>
                             <tbody id="opsInventoryTableBody">
@@ -175,7 +187,7 @@
                     <!-- Low Stock Alerts -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title" style="color:var(--danger);">⚠️ Low Stock Alerts</h3>
+                            <h3 class="card-title" style="color:var(--danger);" data-i18n="dash.low_stock_title">⚠️ Low Stock Alerts</h3>
                             <span class="badge badge-red" id="opsLowStockCount">0 items</span>
                         </div>
                         <div id="opsLowStockAlertsList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
@@ -186,8 +198,8 @@
                     <!-- Stock In Activity Logs -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Inbound Deliveries</h3>
-                            <span class="badge badge-blue">Stock In</span>
+                            <h3 class="card-title" data-i18n="stockin.history_title">Inbound Deliveries</h3>
+                            <span class="badge badge-blue" data-i18n="nav.stock_in">Stock In</span>
                         </div>
                         <div id="opsStockInList" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
                             <!-- Populated dynamically -->
@@ -197,8 +209,8 @@
                     <!-- Stock Out Activity Logs -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Outbound Dispatches</h3>
-                            <span class="badge badge-emerald">Sales</span>
+                            <h3 class="card-title" data-i18n="stockout.history_title">Outbound Dispatches</h3>
+                            <span class="badge badge-emerald" data-i18n="nav.stock_out">Sales</span>
                         </div>
                         <div id="opsStockOutList" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
                             <!-- Populated dynamically -->
@@ -236,52 +248,52 @@
 
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Product Catalog</h1>
-                    <p>Manage products, categories, measuring units, and inventory balances across branches.</p>
+                    <h1 data-i18n="prod.title">Product Catalog</h1>
+                    <p data-i18n="prod.subtitle">Manage products, categories, measuring units, and inventory balances across branches.</p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-primary" onclick="openCreateProductModal()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        Add Product
+                        <span data-i18n="prod.add_btn">Add Product</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="exportProductsToExcel()" title="Download product catalog as Excel spreadsheet">
+                    <button class="btn btn-secondary" onclick="exportProductsToExcel()" title="Download product catalog as Excel spreadsheet" data-i18n-title="action.export_excel">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export Excel
+                        <span data-i18n="action.export_excel">Export Excel</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="printProductCatalog()" title="Print formatted product catalog">
+                    <button class="btn btn-secondary" onclick="printProductCatalog()" title="Print formatted product catalog" data-i18n-title="action.print">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        Print Catalog
+                        <span data-i18n="action.print">Print Catalog</span>
                     </button>
                     <button class="btn btn-danger-outline" onclick="openArchiveViewModal()">
-                        🗄️ Inactive / Deleted Products
+                        🗄️ <span data-i18n="prod.archive_btn">Inactive / Deleted Products</span>
                     </button>
                 </div>
             </div>
 
             <div class="filter-bar">
                 <div class="form-group">
-                    <label>Search Product Name</label>
-                    <input type="text" id="prodSearchName" class="form-control" placeholder="Search by name..." oninput="debounceProductFilter()">
+                    <label data-i18n="table.product">Search Product Name</label>
+                    <input type="text" id="prodSearchName" class="form-control" placeholder="Search by name..." data-i18n-placeholder="prod.search_name_placeholder" oninput="debounceProductFilter()">
                 </div>
                 <div class="form-group">
-                    <label>Search Brand</label>
-                    <input type="text" id="prodSearchBrand" class="form-control" placeholder="Search brand..." oninput="debounceProductFilter()">
+                    <label data-i18n="table.brand">Search Brand</label>
+                    <input type="text" id="prodSearchBrand" class="form-control" placeholder="Search brand..." data-i18n-placeholder="prod.search_brand_placeholder" oninput="debounceProductFilter()">
                 </div>
                 <div class="form-group">
-                    <label>Category</label>
+                    <label data-i18n="table.category">Category</label>
                     <select id="prodFilterType" class="form-control" onchange="loadProducts()">
-                        <option value="">All Categories</option>
-                        <option value="1">Electronics Matrix</option>
-                        <option value="2">Construction Supply</option>
+                        <option value="" data-i18n="prod.filter_all_types">All Categories</option>
+                        <option value="1" data-i18n="prod.filter_type_1">Electronics Matrix</option>
+                        <option value="2" data-i18n="prod.filter_type_2">Construction Supply</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Unit</label>
+                    <label data-i18n="table.unit">Unit</label>
                     <select id="prodFilterUnit" class="form-control" onchange="loadProducts()">
-                        <option value="">All Units</option>
+                        <option value="" data-i18n="prod.filter_all_units">All Units</option>
                     </select>
                 </div>
-                <button class="btn btn-secondary" onclick="resetProductFilters()">Reset</button>
+                <button class="btn btn-secondary" onclick="resetProductFilters()" data-i18n="prod.reset_filters">Reset</button>
             </div>
 
             <div class="card">
@@ -289,14 +301,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('id')">ID ↕</a></th>
-                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('brand')">Brand ↕</a></th>
-                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('name')">Product Name ↕</a></th>
-                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('type')">Category ↕</a></th>
-                                <th>Total Stock</th>
-                                <th>Unit</th>
-                                <th>Color</th>
-                                <th style="text-align:right;">Actions</th>
+                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('id')"><span data-i18n="table.id">ID</span> ↕</a></th>
+                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('brand')"><span data-i18n="table.brand">Brand</span> ↕</a></th>
+                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('name')"><span data-i18n="table.product">Product Name</span> ↕</a></th>
+                                <th><a href="javascript:void(0)" class="th-sort-btn" onclick="sortProducts('type')"><span data-i18n="table.category">Category</span> ↕</a></th>
+                                <th data-i18n="table.stock">Total Stock</th>
+                                <th data-i18n="table.unit">Unit</th>
+                                <th data-i18n="table.color">Color</th>
+                                <th style="text-align:right;" data-i18n="table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
@@ -311,8 +323,8 @@
         <section id="view-stock-in" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Stock In / Receiving Logistics</h1>
-                    <p>Log incoming purchases, multi-unit conversions, and batch inventory replenishments.</p>
+                    <h1 data-i18n="stockin.title">Stock In / Receiving Logistics</h1>
+                    <p data-i18n="stockin.subtitle">Log incoming purchases, multi-unit conversions, and batch inventory replenishments.</p>
                 </div>
                 <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
                     ⚠️ Register Damaged / Lost Items
@@ -323,16 +335,16 @@
                 <!-- Stock In Form -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Record Inbound Shipment</h3>
+                        <h3 class="card-title" data-i18n="stockin.record_btn">Record Inbound Shipment</h3>
                     </div>
                     <form id="stockInForm" onsubmit="handleStockInSubmit(event)">
                         <div class="form-group">
-                            <label for="stockInBranchSelect">Destination Branch Facility</label>
+                            <label for="stockInBranchSelect" data-i18n="stockin.target_branch">Destination Branch Facility</label>
                             <select id="stockInBranchSelect" class="form-control" required onchange="handleStockInBranchChange()"></select>
                         </div>
 
                         <div class="form-group">
-                            <label>Search and Choose Product</label>
+                            <label data-i18n="stockin.select_product">Search and Choose Product</label>
                             <div class="search-select-wrapper" id="stockInProductSearchSelect">
                                 <div class="search-select-trigger" id="stockInProductTrigger">Click to select product...</div>
                                 <div class="search-select-dropdown" id="stockInProductDropdown">
@@ -346,38 +358,38 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="stockInQuantity">Quantity Received</label>
+                            <label for="stockInQuantity" data-i18n="stockin.qty_received">Quantity Received</label>
                             <input type="number" step="1" min="1" id="stockInQuantity" class="form-control" placeholder="Enter quantity" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockInUnitSelect">Counting Unit</label>
+                            <label for="stockInUnitSelect" data-i18n="stockin.unit_select">Counting Unit</label>
                             <select id="stockInUnitSelect" class="form-control" required onchange="updateStockInConversion()"></select>
                         </div>
 
                         <div class="form-group" id="stockInConversionContainer" style="display:none;">
-                            <label>Packaging Conversion (Base Unit Multiplier)</label>
+                            <label data-i18n="stockin.conversion_box_title">Packaging Conversion (Base Unit Multiplier)</label>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span id="stockInConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
                                 <input type="number" step="any" min="0.0001" id="stockInConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onStockInFactorInput()">
                                 <span id="stockInBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
                             </div>
-                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
+                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;" data-i18n="stockin.conversion_hint">Enter how many base units are contained in 1 selected package unit.</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockInPurchasePrice">Total Batch Cost Paid ($)</label>
+                            <label for="stockInPurchasePrice" data-i18n="stockin.batch_cost">Total Batch Cost Paid ($)</label>
                             <input type="number" step="any" min="0" id="stockInPurchasePrice" class="form-control" placeholder="Total cost for entire batch" required>
                             <small style="color:var(--text-muted); font-size:11.5px; margin-top:2px;">Type combined total cost for the whole shipment batch.</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockInDate">Arrival Date</label>
+                            <label for="stockInDate" data-i18n="stockin.delivery_date">Arrival Date</label>
                             <input type="date" id="stockInDate" class="form-control" required>
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">
-                            <span>Confirm &amp; Receive Items</span>
+                            <span data-i18n="stockin.btn_submit">Confirm &amp; Receive Items</span>
                         </button>
                     </form>
                 </div>
@@ -385,19 +397,19 @@
                 <!-- Live Inventory for Selected Branch -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Live In-Store Balances (<span id="stockInBranchNameDisplay">Selected Branch</span>)</h3>
+                        <h3 class="card-title"><span data-i18n="dash.kpi_valuation">Live In-Store Balances</span> (<span id="stockInBranchNameDisplay">Selected Branch</span>)</h3>
                     </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Brand</th>
-                                    <th>Product Nomenclature</th>
-                                    <th>Category</th>
-                                    <th>Stock on Hand</th>
-                                    <th>Color</th>
-                                    <th>Description</th>
+                                    <th data-i18n="table.id">ID</th>
+                                    <th data-i18n="table.brand">Brand</th>
+                                    <th data-i18n="table.product">Product Nomenclature</th>
+                                    <th data-i18n="table.category">Category</th>
+                                    <th data-i18n="table.stock">Stock on Hand</th>
+                                    <th data-i18n="table.color">Color</th>
+                                    <th data-i18n="table.type">Description</th>
                                 </tr>
                             </thead>
                             <tbody id="stockInInventoryTableBody">
@@ -413,8 +425,8 @@
         <section id="view-stock-out" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Stock Out / Sales Dispatch</h1>
-                    <p>Process sales transactions and drain inventory using strict First-In First-Out (FIFO) allocation.</p>
+                    <h1 data-i18n="stockout.title">Stock Out / Sales Dispatch</h1>
+                    <p data-i18n="stockout.subtitle">Process sales transactions and drain inventory using strict First-In First-Out (FIFO) allocation.</p>
                 </div>
                 <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
                     ⚠️ Register Damaged / Lost Items
@@ -425,16 +437,16 @@
                 <!-- Stock Out Form -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Record Sale / Dispatch</h3>
+                        <h3 class="card-title" data-i18n="stockout.record_btn">Record Sale / Dispatch</h3>
                     </div>
                     <form id="stockOutForm" onsubmit="handleStockOutSubmit(event)">
                         <div class="form-group">
-                            <label for="stockOutBranchSelect">Dispatching Branch Facility</label>
+                            <label for="stockOutBranchSelect" data-i18n="stockout.branch">Dispatching Branch Facility</label>
                             <select id="stockOutBranchSelect" class="form-control" required onchange="handleStockOutBranchChange()"></select>
                         </div>
 
                         <div class="form-group">
-                            <label>Search and Choose Product</label>
+                            <label data-i18n="stockout.select_product">Search and Choose Product</label>
                             <div class="search-select-wrapper" id="stockOutProductSearchSelect">
                                 <div class="search-select-trigger" id="stockOutProductTrigger">Click to select product...</div>
                                 <div class="search-select-dropdown" id="stockOutProductDropdown">
@@ -446,44 +458,44 @@
                             </div>
                             <input type="hidden" id="stockOutProductId" required>
                             <div id="stockOutAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px;">
-                                <span style="color:var(--text-secondary);">Available on Shelf:</span>
+                                <span style="color:var(--text-secondary);" data-i18n="table.stock">Available on Shelf:</span>
                                 <span id="stockOutAvailableBadge" class="badge badge-emerald">0 pcs</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockOutQuantity">Number of Items</label>
+                            <label for="stockOutQuantity" data-i18n="stockout.qty_dispatched">Number of Items</label>
                             <input type="number" step="1" min="1" id="stockOutQuantity" class="form-control" placeholder="Enter quantity" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockOutUnitSelect">Counting Unit</label>
+                            <label for="stockOutUnitSelect" data-i18n="table.unit">Counting Unit</label>
                             <select id="stockOutUnitSelect" class="form-control" required onchange="updateStockOutConversion()"></select>
                         </div>
 
                         <div class="form-group" id="stockOutConversionBox" style="display:none;">
-                            <label>Packaging Conversion (Base Unit Multiplier)</label>
+                            <label data-i18n="stockin.conversion_box_title">Packaging Conversion (Base Unit Multiplier)</label>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span id="stockOutConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
                                 <input type="number" step="any" min="0.0001" id="stockOutConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onStockOutFactorInput()">
                                 <span id="stockOutBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
                             </div>
-                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
+                            <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;" data-i18n="stockin.conversion_hint">Enter how many base units are contained in 1 selected package unit.</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockOutSoldPrice">Total Money Received ($)</label>
+                            <label for="stockOutSoldPrice" data-i18n="stockout.sold_price">Total Money Received ($)</label>
                             <input type="number" step="any" min="0" id="stockOutSoldPrice" class="form-control" placeholder="Total revenue for sale batch" required>
                             <small style="color:var(--text-muted); font-size:11.5px; margin-top:2px;">Type the total full sum received for this sale batch.</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="stockOutDate">Sale Date</label>
+                            <label for="stockOutDate" data-i18n="table.date">Sale Date</label>
                             <input type="date" id="stockOutDate" class="form-control" required>
                         </div>
 
                         <button type="submit" class="btn btn-success" style="width:100%; margin-top:8px;">
-                            <span>Execute FIFO Sale Dispatch</span>
+                            <span data-i18n="stockout.btn_submit">Execute FIFO Sale Dispatch</span>
                         </button>
                     </form>
                 </div>
@@ -491,20 +503,20 @@
                 <!-- Live Inventory for Selected Branch -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Live In-Store Balances (<span id="stockOutBranchNameDisplay">Selected Branch</span>)</h3>
+                        <h3 class="card-title"><span data-i18n="dash.kpi_valuation">Live In-Store Balances</span> (<span id="stockOutBranchNameDisplay">Selected Branch</span>)</h3>
                     </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Product Title</th>
-                                    <th>Brand</th>
-                                    <th>Category</th>
-                                    <th>Unit</th>
-                                    <th>Available Stock</th>
-                                    <th>Color</th>
-                                    <th>Description</th>
+                                    <th data-i18n="table.id">ID</th>
+                                    <th data-i18n="table.product">Product Title</th>
+                                    <th data-i18n="table.brand">Brand</th>
+                                    <th data-i18n="table.category">Category</th>
+                                    <th data-i18n="table.unit">Unit</th>
+                                    <th data-i18n="table.stock">Available Stock</th>
+                                    <th data-i18n="table.color">Color</th>
+                                    <th data-i18n="table.type">Description</th>
                                 </tr>
                             </thead>
                             <tbody id="stockOutInventoryTableBody">
@@ -520,23 +532,23 @@
         <section id="view-purchasing" class="app-view" style="display:none;">
             <div class="page-header no-print">
                 <div class="page-title">
-                    <h1>Purchasing Requisition &amp; Order Sheet</h1>
-                    <p>Compile custom line items or auto-scan low stock alerts into a consolidated, print-ready A4 manifest sheet.</p>
+                    <h1 data-i18n="purchasing.title">Purchasing Requisition &amp; Order Sheet</h1>
+                    <p data-i18n="purchasing.subtitle">Compile custom line items or auto-scan low stock alerts into a consolidated, print-ready A4 manifest sheet.</p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-secondary" onclick="savePurchasingDraft(true)" title="Save purchasing cart to browser draft cache">
-                        💾 Save Draft
+                    <button class="btn btn-secondary" onclick="savePurchasingDraft(true)" title="Save purchasing cart to browser draft cache" data-i18n-title="purchasing.save_draft_btn">
+                        <span data-i18n="purchasing.save_draft_btn">💾 Save Draft</span>
                     </button>
-                    <button class="btn btn-danger-outline" onclick="resetPurchasingManifest()" title="Clear and reset purchasing cart">
-                        🗑️ Reset Cart
+                    <button class="btn btn-danger-outline" onclick="resetPurchasingManifest()" title="Clear and reset purchasing cart" data-i18n-title="purchasing.reset_cart_btn">
+                        <span data-i18n="purchasing.reset_cart_btn">🗑️ Reset Cart</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="exportPurchasingToExcel()" title="Export purchasing order to Excel CSV">
+                    <button class="btn btn-secondary" onclick="exportPurchasingToExcel()" title="Export purchasing order to Excel CSV" data-i18n-title="action.export_excel">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export Excel
+                        <span data-i18n="action.export_excel">Export Excel</span>
                     </button>
                     <button class="btn btn-primary" onclick="printPurchaseManifest()" style="background:#7c3aed; border-color:#7c3aed;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        🖨️ Print / PDF Order Sheet
+                        <span data-i18n="purchasing.print_btn">🖨️ Print / PDF Order Sheet</span>
                     </button>
                 </div>
             </div>
@@ -560,11 +572,11 @@
                     <!-- Custom Line Item Adder -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Add Custom Product Line</h3>
+                            <h3 class="card-title" data-i18n="purchasing.form_title">Add Custom Product Line</h3>
                         </div>
                         <form id="purchasingAdderForm" onsubmit="handlePurchasingAddLine(event)">
                             <div class="form-group">
-                                <label>Select Product Profile</label>
+                                <label data-i18n="prod.title">Select Product Profile</label>
                                 <div class="search-select-wrapper" id="purchasingProductSearchSelect">
                                     <div class="search-select-trigger" id="purchasingProductTrigger">Click to select product...</div>
                                     <div class="search-select-dropdown" id="purchasingProductDropdown">
@@ -578,7 +590,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Target Destination Branches</label>
+                                <label data-i18n="purchasing.destinations">Target Destination Branches</label>
                                 <select id="purchasingBranchMultiSelect" class="form-control" multiple style="height:90px;" required>
                                     <!-- Populated dynamically -->
                                 </select>
@@ -587,28 +599,30 @@
 
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                 <div class="form-group">
-                                    <label>Order Quantity</label>
+                                    <label data-i18n="purchasing.order_qty">Order Quantity</label>
                                     <input type="number" step="any" min="0.01" id="purchasingQty" class="form-control" placeholder="0" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Color / Spec</label>
+                                    <label data-i18n="purchasing.color_spec">Color / Spec</label>
                                     <input type="text" id="purchasingColor" class="form-control" placeholder="e.g. Standard, Red">
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label>Logistics / Supplier Notes</label>
+                                <label data-i18n="purchasing.notes">Logistics / Supplier Notes</label>
                                 <input type="text" id="purchasingNotes" class="form-control" placeholder="Supplier remarks or instructions">
                             </div>
 
-                            <button type="submit" class="btn btn-primary" style="width:100%;">🛒 Add to Cart</button>
+                            <button type="submit" class="btn btn-primary" style="width:100%;">
+                                <span data-i18n="purchasing.form_title">🛒 Add to Cart</span>
+                            </button>
                         </form>
                     </div>
 
                     <!-- Low Stock System Scanner -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title" style="color:var(--danger);">⚠️ Low Stock Alerts (Threshold Scan)</h3>
+                            <h3 class="card-title" style="color:var(--danger);" data-i18n="purchasing.scanner_title">⚠️ Low Stock Alerts (Threshold Scan)</h3>
                         </div>
                         <div id="purchasingLowStockList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
                             <!-- Populated dynamically -->
@@ -619,7 +633,7 @@
                 <!-- Active Purchasing Requisition Sheet Table -->
                 <div class="card" style="min-width:0;">
                     <div class="card-header">
-                        <h3 class="card-title">Active Purchasing Cart &amp; Requisition Sheet</h3>
+                        <h3 class="card-title" data-i18n="purchasing.manifest_title">Active Purchasing Cart &amp; Requisition Sheet</h3>
                         <span class="badge badge-purple" id="purchasingListCount">0 items</span>
                     </div>
                     <div class="table-responsive" style="overflow-x:auto;">
@@ -627,14 +641,14 @@
                             <thead>
                                 <tr>
                                     <th style="width:36px; text-align:center;">#</th>
-                                    <th style="min-width:90px;">Brand</th>
-                                    <th style="min-width:110px;">Product Name</th>
-                                    <th style="min-width:85px;">Color / Spec</th>
-                                    <th style="min-width:90px;">Destination(s)</th>
-                                    <th style="min-width:80px;">Order Qty</th>
-                                    <th style="width:75px;">Price ($)</th>
-                                    <th style="min-width:130px;">Remarks / Notes</th>
-                                    <th class="action-column" style="text-align:right; width:110px;">Action</th>
+                                    <th style="min-width:90px;" data-i18n="table.brand">Brand</th>
+                                    <th style="min-width:110px;" data-i18n="table.product">Product Name</th>
+                                    <th style="min-width:85px;" data-i18n="table.color">Color / Spec</th>
+                                    <th style="min-width:90px;" data-i18n="table.branches">Destination(s)</th>
+                                    <th style="min-width:80px;" data-i18n="table.quantity">Order Qty</th>
+                                    <th style="width:75px;" data-i18n="table.price">Price ($)</th>
+                                    <th style="min-width:130px;" data-i18n="table.type">Remarks / Notes</th>
+                                    <th class="action-column" style="text-align:right; width:110px;" data-i18n="table.actions">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="purchasingManifestTableBody">
@@ -663,29 +677,29 @@
 
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Business Reports &amp; Insights</h1>
-                    <p>Track your sales, stock purchases, profits, damaged goods, and inventory at a glance.</p>
+                    <h1 data-i18n="reports.title">Business Reports &amp; Insights</h1>
+                    <p data-i18n="reports.subtitle">Track your sales, stock purchases, profits, damaged goods, and inventory at a glance.</p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-secondary" onclick="toggleAnalyticsVisualizer()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                        Toggle Charts
+                        <span data-i18n="reports.toggle_charts">Toggle Charts</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="exportExecutiveReportToExcel()" title="Export summary metrics to Excel">
+                    <button class="btn btn-secondary" onclick="exportExecutiveReportToExcel()" title="Export summary metrics to Excel" data-i18n-title="reports.summary_excel">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Summary Excel
+                        <span data-i18n="reports.summary_excel">Summary Excel</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="exportRemainingStockToExcel()" title="Export shelf inventory balances to Excel">
+                    <button class="btn btn-secondary" onclick="exportRemainingStockToExcel()" title="Export shelf inventory balances to Excel" data-i18n-title="reports.stock_excel">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Stock Excel
+                        <span data-i18n="reports.stock_excel">Stock Excel</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="exportDamagedReportToExcel()" title="Export damaged stock report to Excel">
+                    <button class="btn btn-secondary" onclick="exportDamagedReportToExcel()" title="Export damaged stock report to Excel" data-i18n-title="reports.damaged_excel">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Damaged Excel
+                        <span data-i18n="reports.damaged_excel">Damaged Excel</span>
                     </button>
-                    <button class="btn btn-secondary" onclick="printExecutiveReport()">
+                    <button class="btn btn-secondary" onclick="printExecutiveReport()" data-i18n-title="reports.print_report">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        Print Report
+                        <span data-i18n="reports.print_report">Print Report</span>
                     </button>
                 </div>
             </div>
@@ -694,26 +708,26 @@
             <div class="card" style="background:var(--surface-hover); border-left:4px solid var(--primary); margin-bottom:20px; padding:16px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleReportGuide()">
                     <div style="display:flex; align-items:center; gap:8px; font-weight:600; color:var(--text-primary); font-size:14px;">
-                        <span>💡 How these report numbers work (Simple Guide)</span>
+                        <span data-i18n="reports.guide_title">💡 How these report numbers work (Simple Guide)</span>
                     </div>
                     <span id="guideToggleIcon" style="font-size:12px; color:var(--text-muted);">▼ Click to show/hide</span>
                 </div>
                 <div id="reportGuideContent" style="display:none; margin-top:14px; font-size:13px; color:var(--text-secondary); line-height:1.6;">
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
-                            <strong style="color:var(--primary);">💵 Total Sales Revenue:</strong> Total cash collected from customer sales in this period.
+                            <strong style="color:var(--primary);">💵 <span data-i18n="reports.guide_rev">Total Sales Revenue: Total cash collected from customer sales in this period.</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
-                            <strong style="color:var(--info);">🛒 Total Purchases:</strong> Total money spent buying new stock from suppliers in this period.
+                            <strong style="color:var(--info);">🛒 <span data-i18n="reports.guide_purch">Total Purchases: Total money spent buying new stock from suppliers in this period.</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
-                            <strong style="color:var(--success);">💰 Net Profit:</strong> Actual profit earned (<code style="color:var(--text-primary);">Sales Revenue</code> minus <code style="color:var(--text-primary);">Cost of Items Sold</code>).
+                            <strong style="color:var(--success);">💰 <span data-i18n="reports.guide_profit">Net Profit: Actual profit earned (Sales Revenue minus Cost of Items Sold).</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
-                            <strong style="color:var(--warning);">🏬 Current Stock Value:</strong> The estimated value of products currently sitting on your shelves.
+                            <strong style="color:var(--warning);">🏬 <span data-i18n="reports.guide_stock_val">Current Stock Value: The estimated value of products currently sitting on your shelves.</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
-                            <strong style="color:var(--danger);">⚠️ Damaged / Lost Stock:</strong> Goods written off due to breaks, expiry, or loss, with estimated loss cost.
+                            <strong style="color:var(--danger);">⚠️ <span data-i18n="reports.guide_damaged">Damaged / Lost Stock: Goods written off due to breaks, expiry, or loss, with estimated loss cost.</span></strong>
                         </div>
                     </div>
                 </div>
@@ -722,56 +736,56 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="form-group">
-                    <label for="reportsBranchSelect">Branch Location</label>
+                    <label for="reportsBranchSelect" data-i18n="reports.branch_label">Branch Location</label>
                     <select id="reportsBranchSelect" class="form-control" onchange="loadExecutiveReports()">
-                        <option value="all">All Branches Combined</option>
+                        <option value="all" data-i18n="reports.all_branches">All Branches Combined</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="reportsRangeType">Time Period</label>
+                    <label for="reportsRangeType" data-i18n="reports.time_period">Time Period</label>
                     <select id="reportsRangeType" class="form-control" onchange="handleReportsRangeChange()">
-                        <option value="today">Today</option>
-                        <option value="weekly">This Week</option>
-                        <option value="monthly">This Month</option>
-                        <option value="yearly">This Year</option>
-                        <option value="custom">Custom Date Range</option>
+                        <option value="today" data-i18n="reports.period_today">Today</option>
+                        <option value="weekly" data-i18n="reports.period_weekly">This Week</option>
+                        <option value="monthly" data-i18n="reports.period_monthly">This Month</option>
+                        <option value="yearly" data-i18n="reports.period_yearly">This Year</option>
+                        <option value="custom" data-i18n="reports.period_custom">Custom Date Range</option>
                     </select>
                 </div>
                 <div class="form-group" id="reportsCustomStartGroup" style="display:none;">
-                    <label for="reportsStartDate">Start Date</label>
+                    <label for="reportsStartDate" data-i18n="reports.start_date">Start Date</label>
                     <input type="date" id="reportsStartDate" class="form-control" onchange="loadExecutiveReports()">
                 </div>
                 <div class="form-group" id="reportsCustomEndGroup" style="display:none;">
-                    <label for="reportsEndDate">End Date (Optional)</label>
+                    <label for="reportsEndDate" data-i18n="reports.end_date">End Date (Optional)</label>
                     <input type="date" id="reportsEndDate" class="form-control" onchange="loadExecutiveReports()">
                 </div>
-                <button class="btn btn-primary" onclick="loadExecutiveReports()">Filter Report</button>
+                <button class="btn btn-primary" onclick="loadExecutiveReports()" data-i18n="reports.filter_btn">Filter Report</button>
             </div>
 
             <!-- KPI Cards Strip -->
             <div class="kpi-grid">
                 <div class="kpi-card" style="--kpi-accent:var(--purple);">
-                    <div class="kpi-label">📦 Total Products</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_products">📦 Total Products</div>
                     <div class="kpi-value" style="color:var(--purple);" id="kpiTotalSkus">0 Products</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--primary);">
-                    <div class="kpi-label">💵 Total Sales Revenue</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_sales">💵 Total Sales Revenue</div>
                     <div class="kpi-value" style="color:var(--primary);" id="kpiTotalRevenue">$0.00</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--info);">
-                    <div class="kpi-label">🛒 Total Purchases</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_purchases">🛒 Total Purchases</div>
                     <div class="kpi-value" style="color:var(--info);" id="kpiTotalPurchaseCost">$0.00</div>
                 </div>
                 <div class="kpi-card" id="kpiNetProfitCard" style="--kpi-accent:var(--success);">
-                    <div class="kpi-label">💰 Net Profit Earned</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_profit">💰 Net Profit Earned</div>
                     <div class="kpi-value" style="color:var(--success);" id="kpiNetProfit">$0.00</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--warning);">
-                    <div class="kpi-label">🏬 Current Stock Value</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_stock_value">🏬 Current Stock Value</div>
                     <div class="kpi-value" style="color:var(--warning);" id="kpiOnHandValuation">$0.00</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--danger);">
-                    <div class="kpi-label">⚠️ Damaged / Lost Stock</div>
+                    <div class="kpi-label" data-i18n="reports.kpi_damaged">⚠️ Damaged / Lost Stock</div>
                     <div class="kpi-value" style="color:var(--danger);" id="kpiDamagedGoods">0 Units ($0.00)</div>
                 </div>
             </div>
@@ -780,11 +794,11 @@
             <div id="analyticsChartsWrapper" style="display:none; margin-bottom:24px;">
                 <div class="responsive-split-grid split-grid-dual">
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">Financial Summary (Sales vs Cost vs Profit)</h3></div>
+                        <div class="card-header"><h3 class="card-title" data-i18n="reports.chart_financial">Financial Summary (Sales vs Cost vs Profit)</h3></div>
                         <div style="position:relative; height:300px;"><canvas id="financialBarCanvas"></canvas></div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">Daily Sales Trend</h3></div>
+                        <div class="card-header"><h3 class="card-title" data-i18n="reports.chart_daily">Daily Sales Trend</h3></div>
                         <div style="position:relative; height:300px;"><canvas id="salesTrendCanvas"></canvas></div>
                     </div>
                 </div>
@@ -793,18 +807,18 @@
             <!-- Branch Performance Summary Table -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Branch Sales &amp; Profit Summary</h3>
-                    <span class="badge badge-blue">Performance Breakdown</span>
+                    <h3 class="card-title" data-i18n="reports.branch_summary_title">Branch Sales &amp; Profit Summary</h3>
+                    <span class="badge badge-blue" data-i18n="reports.perf_breakdown">Performance Breakdown</span>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Branch / Product</th>
-                                <th>Units Sold</th>
-                                <th>Total Sales</th>
-                                <th>Cost of Items Sold</th>
-                                <th>Net Profit</th>
+                                <th data-i18n="reports.th_branch_prod">Branch / Product</th>
+                                <th data-i18n="reports.th_units_sold">Units Sold</th>
+                                <th data-i18n="reports.th_total_sales">Total Sales</th>
+                                <th data-i18n="reports.th_cogs">Cost of Items Sold</th>
+                                <th data-i18n="reports.th_net_profit">Net Profit</th>
                             </tr>
                         </thead>
                         <tbody id="facilityMatrixTableBody">
@@ -819,7 +833,7 @@
                 <div class="card-header">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-size:18px;">⚠️</span>
-                        <h3 class="card-title">Damaged &amp; Lost Products Report</h3>
+                        <h3 class="card-title" data-i18n="reports.damaged_title">Damaged &amp; Lost Products Report</h3>
                     </div>
                     <span class="badge badge-red" id="damagedLedgerCount">0 incident records</span>
                 </div>
@@ -827,13 +841,13 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Branch</th>
-                                <th>Product</th>
-                                <th>Quantity Lost</th>
-                                <th>Reason / Incident Details</th>
-                                <th>Reported By</th>
-                                <th>Estimated Loss</th>
+                                <th data-i18n="table.date">Date</th>
+                                <th data-i18n="table.branch">Branch</th>
+                                <th data-i18n="table.product">Product</th>
+                                <th data-i18n="reports.th_qty_lost">Quantity Lost</th>
+                                <th data-i18n="reports.th_incident">Reason / Incident Details</th>
+                                <th data-i18n="reports.th_reported_by">Reported By</th>
+                                <th data-i18n="reports.th_est_loss">Estimated Loss</th>
                             </tr>
                         </thead>
                         <tbody id="damagedLedgerTableBody">
@@ -847,18 +861,18 @@
             <div class="responsive-split-grid split-grid-dual" style="margin-top:24px;">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">📥 Stock In History (Purchases)</h3>
+                        <h3 class="card-title" data-i18n="reports.stock_in_history">📥 Stock In History (Purchases)</h3>
                         <span class="badge badge-blue" id="inboundLedgerCount">0 entries</span>
                     </div>
                     <div class="table-responsive" style="max-height:400px;">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Branch</th>
-                                    <th>Product</th>
-                                    <th>Quantity In</th>
-                                    <th>Purchase Cost</th>
+                                    <th data-i18n="table.date">Date</th>
+                                    <th data-i18n="table.branch">Branch</th>
+                                    <th data-i18n="table.product">Product</th>
+                                    <th data-i18n="stockin.qty_received">Quantity In</th>
+                                    <th data-i18n="stockin.batch_cost">Purchase Cost</th>
                                 </tr>
                             </thead>
                             <tbody id="inboundLedgerTableBody"></tbody>
@@ -868,18 +882,18 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">📤 Stock Out History (Sales)</h3>
+                        <h3 class="card-title" data-i18n="reports.stock_out_history">📤 Stock Out History (Sales)</h3>
                         <span class="badge badge-emerald" id="outboundLedgerCount">0 entries</span>
                     </div>
                     <div class="table-responsive" style="max-height:400px;">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Branch</th>
-                                    <th>Product</th>
-                                    <th>Quantity Sold</th>
-                                    <th>Sale Amount</th>
+                                    <th data-i18n="table.date">Date</th>
+                                    <th data-i18n="table.branch">Branch</th>
+                                    <th data-i18n="table.product">Product</th>
+                                    <th data-i18n="stockout.qty_dispatched">Quantity Sold</th>
+                                    <th data-i18n="stockout.sold_price">Sale Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="outboundLedgerTableBody"></tbody>
@@ -891,17 +905,17 @@
             <!-- Remaining Stock on Shelves Table -->
             <div class="card" style="margin-top:24px;">
                 <div class="card-header">
-                    <h3 class="card-title">🏬 Current Stock on Shelves</h3>
-                    <span class="badge badge-slate">Live Inventory Balance</span>
+                    <h3 class="card-title" data-i18n="reports.remaining_title">🏬 Current Stock on Shelves</h3>
+                    <span class="badge badge-slate" data-i18n="dash.kpi_valuation">Live Inventory Balance</span>
                 </div>
                 <div class="table-responsive" style="max-height:450px;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Branch</th>
-                                <th>Product</th>
-                                <th>Remaining Stock</th>
-                                <th>Stock Status</th>
+                                <th data-i18n="table.branch">Branch</th>
+                                <th data-i18n="table.product">Product</th>
+                                <th data-i18n="reports.th_remaining_stock">Remaining Stock</th>
+                                <th data-i18n="reports.th_stock_status">Stock Status</th>
                             </tr>
                         </thead>
                         <tbody id="reportsRemainingInventoryTableBody"></tbody>
@@ -914,12 +928,12 @@
         <section id="view-branches" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>Branch Management</h1>
-                    <p>Add, view, and manage your warehouse and store branch locations.</p>
+                    <h1 data-i18n="branches.title">Branch Management</h1>
+                    <p data-i18n="branches.subtitle">Add, view, and manage your warehouse and store branch locations.</p>
                 </div>
                 <button class="btn btn-primary" onclick="openCreateBranchModal()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Add New Branch
+                    <span data-i18n="branches.add_btn">Add New Branch</span>
                 </button>
             </div>
 
@@ -928,11 +942,11 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Branch Name</th>
-                                <th>Category</th>
-                                <th>Location</th>
-                                <th>Items In Stock</th>
-                                <th style="text-align:right;">Actions</th>
+                                <th data-i18n="branches.table_name">Branch Name</th>
+                                <th data-i18n="branches.table_category">Category</th>
+                                <th data-i18n="branches.table_location">Location</th>
+                                <th data-i18n="branches.table_items">Items In Stock</th>
+                                <th style="text-align:right;" data-i18n="table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="branchesTableBody">
@@ -947,12 +961,12 @@
         <section id="view-accounts" class="app-view" style="display:none;">
             <div class="page-header">
                 <div class="page-title">
-                    <h1>User Accounts</h1>
-                    <p>Create and manage user accounts, assign roles, and set branch access permissions.</p>
+                    <h1 data-i18n="accounts.title">User Accounts</h1>
+                    <p data-i18n="accounts.subtitle">Create and manage user accounts, assign roles, and set branch access permissions.</p>
                 </div>
                 <button class="btn btn-primary" onclick="openCreateAccountModal()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Add New Account
+                    <span data-i18n="accounts.add_btn">Add New Account</span>
                 </button>
             </div>
 
@@ -961,12 +975,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Email Address</th>
-                                <th>Role</th>
-                                <th>Assigned Branches</th>
-                                <th>Date Created</th>
-                                <th style="text-align:right;">Actions</th>
+                                <th data-i18n="table.username">Username</th>
+                                <th data-i18n="table.email">Email Address</th>
+                                <th data-i18n="table.role">Role</th>
+                                <th data-i18n="table.branches">Assigned Branches</th>
+                                <th data-i18n="table.created">Date Created</th>
+                                <th style="text-align:right;" data-i18n="table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="accountsTableBody">
@@ -980,8 +994,8 @@
             <div class="card" style="margin-top:24px;">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
                     <div>
-                        <h3 class="card-title">🛡️ Role Navigation &amp; Menu Permissions</h3>
-                        <p style="font-size:13px; color:var(--text-secondary); margin-top:2px;">
+                        <h3 class="card-title" data-i18n="accounts.permissions_title">🛡️ Role Navigation &amp; Menu Permissions</h3>
+                        <p style="font-size:13px; color:var(--text-secondary); margin-top:2px;" data-i18n="accounts.permissions_subtitle">
                             Configure which system modules and navigation menus are visible and accessible for each role.
                         </p>
                     </div>
@@ -991,10 +1005,10 @@
                     <table id="rolePermissionsTable">
                         <thead>
                             <tr>
-                                <th>Menu / Module</th>
-                                <th style="text-align:center;">👑 Admin</th>
-                                <th style="text-align:center;">⚡ Manager</th>
-                                <th style="text-align:center;">📦 Staff</th>
+                                <th data-i18n="accounts.th_menu">Menu / Module</th>
+                                <th style="text-align:center;" data-i18n="role.admin">👑 Admin</th>
+                                <th style="text-align:center;" data-i18n="role.manager">⚡ Manager</th>
+                                <th style="text-align:center;" data-i18n="role.staff">📦 Staff</th>
                             </tr>
                         </thead>
                         <tbody id="rolePermissionsTableBody">
@@ -1014,51 +1028,51 @@
     <div class="modal-backdrop" id="productModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 id="productModalTitle">Add Product</h3>
+                <h3 id="productModalTitle" data-i18n="modal.prod_add_title">Add Product</h3>
                 <button class="modal-close-btn" onclick="closeModal('productModal')">✕</button>
             </div>
             <form id="productForm" onsubmit="handleProductFormSubmit(event)">
                 <input type="hidden" id="productFormId">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="prodFormName">Product Name</label>
+                        <label for="prodFormName" data-i18n="modal.prod_name">Product Name</label>
                         <input type="text" id="prodFormName" class="form-control" placeholder="e.g. Cat6 Network Cable" required>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormType">Category</label>
+                        <label for="prodFormType" data-i18n="table.category">Category</label>
                         <select id="prodFormType" class="form-control" required>
-                            <option value="1">Electronics Matrix</option>
-                            <option value="2">Construction Supply</option>
+                            <option value="1" data-i18n="prod.filter_type_1">Electronics Matrix</option>
+                            <option value="2" data-i18n="prod.filter_type_2">Construction Supply</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormBrand">Brand / Manufacturer</label>
+                        <label for="prodFormBrand" data-i18n="modal.prod_brand">Brand / Manufacturer</label>
                         <input type="text" id="prodFormBrand" class="form-control" placeholder="e.g. Cisco Systems" required>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormUnit">Unit of Measure</label>
+                        <label for="prodFormUnit" data-i18n="modal.prod_unit">Unit of Measure</label>
                         <select id="prodFormUnit" class="form-control" required></select>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormDesc">Description (Optional)</label>
+                        <label for="prodFormDesc" data-i18n="modal.prod_desc">Description (Optional)</label>
                         <textarea id="prodFormDesc" class="form-control" placeholder="Product details, specifications, notes..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormColor">Color (Optional)</label>
+                        <label for="prodFormColor" data-i18n="modal.prod_color">Color (Optional)</label>
                         <div style="display:flex; gap:10px;">
                             <input type="text" id="prodFormColorText" class="form-control" placeholder="e.g. #2c7be5 or Red (optional)" oninput="syncColorPicker(this.value)">
                             <input type="color" id="prodFormColorPicker" style="width:48px; height:42px; border:1px solid var(--border-color); border-radius:6px; cursor:pointer;" oninput="syncColorText(this.value)">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="prodFormMinStock">Low Stock Alert Threshold (in Base Units)</label>
+                        <label for="prodFormMinStock" data-i18n="modal.prod_threshold">Low Stock Alert Threshold (in Base Units)</label>
                         <input type="number" step="any" min="0" id="prodFormMinStock" class="form-control" placeholder="5 (e.g. 500 for kg, 100 for meters, 5 for pcs)">
-                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Trigger low stock warnings and purchasing manifests when branch stock drops below this value.</small>
+                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;" data-i18n="modal.prod_threshold_hint">Trigger low stock warnings and purchasing manifests when branch stock drops below this value.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">✕ Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="productFormSubmitBtn">💾 Save Product</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">✕ <span data-i18n="action.cancel">Cancel</span></button>
+                    <button type="submit" class="btn btn-primary" id="productFormSubmitBtn">💾 <span data-i18n="action.save">Save Product</span></button>
                 </div>
             </form>
         </div>
@@ -1068,23 +1082,23 @@
     <div class="modal-backdrop" id="archiveModal">
         <div class="modal-dialog" style="max-width:750px;">
             <div class="modal-header">
-                <h3>Inactive / Deleted Products</h3>
+                <h3 data-i18n="modal.archive_title">Inactive / Deleted Products</h3>
                 <button class="modal-close-btn" onclick="closeModal('archiveModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:14px;">
+                <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:14px;" data-i18n="modal.archive_subtitle">
                     Below are deleted or hidden products. You can restore them to active stock at any time.
                 </p>
                 <div class="table-responsive" style="max-height:360px;">
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Brand</th>
-                                <th>Product Name</th>
-                                <th>Category</th>
-                                <th>Unit</th>
-                                <th style="text-align:right;">Actions</th>
+                                <th data-i18n="table.id">ID</th>
+                                <th data-i18n="table.brand">Brand</th>
+                                <th data-i18n="table.product">Product Name</th>
+                                <th data-i18n="table.category">Category</th>
+                                <th data-i18n="table.unit">Unit</th>
+                                <th style="text-align:right;" data-i18n="table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="archivedProductsTableBody">
@@ -1094,7 +1108,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('archiveModal')">Close</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('archiveModal')" data-i18n="action.close">Close</button>
             </div>
         </div>
     </div>
@@ -1103,31 +1117,31 @@
     <div class="modal-backdrop" id="branchModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 id="branchModalTitle">Add New Branch</h3>
+                <h3 id="branchModalTitle" data-i18n="modal.branch_add_title">Add New Branch</h3>
                 <button class="modal-close-btn" onclick="closeModal('branchModal')">✕</button>
             </div>
             <form id="branchForm" onsubmit="handleBranchFormSubmit(event)">
                 <input type="hidden" id="branchFormId">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="branchFormName">Branch / Warehouse Name</label>
+                        <label for="branchFormName" data-i18n="modal.branch_name">Branch / Warehouse Name</label>
                         <input type="text" id="branchFormName" class="form-control" placeholder="e.g. Downtown Warehouse" required>
                     </div>
                     <div class="form-group">
-                        <label for="branchFormType">Branch Category / Specialization</label>
+                        <label for="branchFormType" data-i18n="modal.branch_spec">Branch Category / Specialization</label>
                         <select id="branchFormType" class="form-control" required>
-                            <option value="1">Mobile Repair &amp; Electronics</option>
-                            <option value="2">Construction Supply</option>
+                            <option value="1" data-i18n="cat.mobile_repair">Mobile Repair &amp; Electronics</option>
+                            <option value="2" data-i18n="cat.construction">Construction Supply</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="branchFormLocation">Location / Address</label>
+                        <label for="branchFormLocation" data-i18n="modal.branch_location">Location / Address</label>
                         <textarea id="branchFormLocation" class="form-control" placeholder="Street address, city, state..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('branchModal')">✕ Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="branchFormSubmitBtn">💾 Save Branch</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('branchModal')">✕ <span data-i18n="action.cancel">Cancel</span></button>
+                    <button type="submit" class="btn btn-primary" id="branchFormSubmitBtn">💾 <span data-i18n="action.save">Save Branch</span></button>
                 </div>
             </form>
         </div>
@@ -1137,43 +1151,43 @@
     <div class="modal-backdrop" id="accountModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 id="accountModalTitle">Add New Account</h3>
+                <h3 id="accountModalTitle" data-i18n="modal.acc_add_title">Add New Account</h3>
                 <button class="modal-close-btn" onclick="closeModal('accountModal')">✕</button>
             </div>
             <form id="accountForm" onsubmit="handleAccountFormSubmit(event)">
                 <input type="hidden" id="accountFormId">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="accountFormUsername">Username</label>
+                        <label for="accountFormUsername" data-i18n="modal.acc_username">Username</label>
                         <input type="text" id="accountFormUsername" class="form-control" placeholder="e.g. john_doe" required>
                     </div>
                     <div class="form-group">
-                        <label for="accountFormEmail">Email Address (Optional)</label>
+                        <label for="accountFormEmail" data-i18n="modal.acc_email">Email Address (Optional)</label>
                         <input type="email" id="accountFormEmail" class="form-control" placeholder="e.g. john@example.com">
                     </div>
                     <div class="form-group">
-                        <label for="accountFormPassword" id="accountFormPasswordLabel">Account Password</label>
+                        <label for="accountFormPassword" id="accountFormPasswordLabel" data-i18n="modal.acc_pass">Account Password</label>
                         <input type="password" id="accountFormPassword" class="form-control" placeholder="••••••••">
-                        <small id="accountFormPasswordHelp" style="color:var(--text-muted); font-size:11.5px; display:none;">Leave blank to keep existing password.</small>
+                        <small id="accountFormPasswordHelp" style="color:var(--text-muted); font-size:11.5px; display:none;" data-i18n="modal.acc_pass_help">Leave blank to keep existing password.</small>
                     </div>
                     <div class="form-group">
-                        <label for="accountFormRole">Account Role</label>
+                        <label for="accountFormRole" data-i18n="modal.acc_role">Account Role</label>
                         <select id="accountFormRole" class="form-control" onchange="handleAccountRoleChange(this.value)">
-                            <option value="staff">Staff (Stock In &amp; Stock Out)</option>
-                            <option value="manager">Manager (Inventory, Analytics &amp; Purchasing)</option>
-                            <option value="admin">Admin (Full System Access)</option>
+                            <option value="staff" data-i18n="role.staff_desc">Staff (Stock In &amp; Stock Out)</option>
+                            <option value="manager" data-i18n="role.manager_desc">Manager (Inventory, Analytics &amp; Purchasing)</option>
+                            <option value="admin" data-i18n="role.admin_desc">Admin (Full System Access)</option>
                         </select>
                     </div>
                     <div class="form-group" id="accountBranchesSelectorGroup">
-                        <label>Assigned Branches</label>
+                        <label data-i18n="modal.acc_branches">Assigned Branches</label>
                         <div id="accountBranchesCheckboxList" style="border:1.5px solid var(--border-color); border-radius:var(--radius-md); padding:12px; max-height:140px; overflow-y:auto; background:var(--surface);">
                             <!-- Checkboxes populated dynamically -->
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('accountModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="accountFormSubmitBtn">Save Account</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('accountModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="accountFormSubmitBtn" data-i18n="action.save">Save Account</button>
                 </div>
             </form>
         </div>
@@ -1183,7 +1197,7 @@
     <div class="modal-backdrop" id="editStockInModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3>Modify Inbound Delivery Batch</h3>
+                <h3 data-i18n="modal.stockin_edit_title">Modify Inbound Delivery Batch</h3>
                 <button class="modal-close-btn" onclick="closeModal('editStockInModal')">✕</button>
             </div>
             <form id="editStockInForm" onsubmit="handleEditStockInSubmit(event)">
@@ -1192,17 +1206,17 @@
                 <div class="modal-body">
                     <p style="margin-bottom:16px; font-size:14px; color:var(--text-secondary);">Target Item: <strong id="editStockInProdName">Product</strong></p>
                     <div class="form-group">
-                        <label for="editStockInQty">Quantity Received</label>
+                        <label for="editStockInQty" data-i18n="stockin.qty_received">Quantity Received</label>
                         <input type="number" step="any" min="0" id="editStockInQty" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="editStockInPrice">Batch Purchase Cost Paid ($)</label>
+                        <label for="editStockInPrice" data-i18n="stockin.batch_cost">Batch Purchase Cost Paid ($)</label>
                         <input type="number" step="any" min="0" id="editStockInPrice" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStockInModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Apply Adjustments</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStockInModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="action.apply">Apply Adjustments</button>
                 </div>
             </form>
         </div>
@@ -1212,7 +1226,7 @@
     <div class="modal-backdrop" id="editStockOutModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3>Modify Outbound Sales Transaction</h3>
+                <h3 data-i18n="modal.stockout_edit_title">Modify Outbound Sales Transaction</h3>
                 <button class="modal-close-btn" onclick="closeModal('editStockOutModal')">✕</button>
             </div>
             <form id="editStockOutForm" onsubmit="handleEditStockOutSubmit(event)">
@@ -1221,17 +1235,17 @@
                 <div class="modal-body">
                     <p style="margin-bottom:16px; font-size:14px; color:var(--text-secondary);">Target Item: <strong id="editStockOutProdName">Product</strong></p>
                     <div class="form-group">
-                        <label for="editStockOutQty">Quantity Dispatched</label>
+                        <label for="editStockOutQty" data-i18n="stockout.qty_dispatched">Quantity Dispatched</label>
                         <input type="number" step="any" min="0" id="editStockOutQty" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="editStockOutPrice">Total Price Sold ($)</label>
+                        <label for="editStockOutPrice" data-i18n="stockout.sold_price">Total Price Sold ($)</label>
                         <input type="number" step="any" min="0" id="editStockOutPrice" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStockOutModal')">Cancel</button>
-                    <button type="submit" class="btn btn-success">Apply Adjustments</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStockOutModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-success" data-i18n="action.apply">Apply Adjustments</button>
                 </div>
             </form>
         </div>
@@ -1241,7 +1255,7 @@
     <div class="modal-backdrop" id="damagedStockModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 style="color:var(--danger); display:flex; align-items:center; gap:6px;">
+                <h3 style="color:var(--danger); display:flex; align-items:center; gap:6px;" data-i18n="damaged.title">
                     ⚠️ Register Damaged / Lost Stock
                 </h3>
                 <button class="modal-close-btn" onclick="closeModal('damagedStockModal')">✕</button>
@@ -1249,12 +1263,12 @@
             <form id="damagedStockForm" onsubmit="handleDamagedStockSubmit(event)">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="damagedBranchSelect">Branch Facility</label>
+                        <label for="damagedBranchSelect" data-i18n="table.branch">Branch Facility</label>
                         <select id="damagedBranchSelect" class="form-control" required onchange="handleDamagedBranchChange()"></select>
                     </div>
 
                     <div class="form-group">
-                        <label>Search and Choose Product</label>
+                        <label data-i18n="stockin.select_product">Search and Choose Product</label>
                         <div class="search-select-wrapper" id="damagedProductSearchSelect">
                             <div class="search-select-trigger" id="damagedProductTrigger">Click to select damaged product...</div>
                             <div class="search-select-dropdown" id="damagedProductDropdown">
@@ -1266,33 +1280,33 @@
                         </div>
                         <input type="hidden" id="damagedProductId" required>
                         <div id="damagedAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px;">
-                            <span style="color:var(--text-secondary);">Shelf Stock:</span>
+                            <span style="color:var(--text-secondary);" data-i18n="table.stock">Shelf Stock:</span>
                             <span id="damagedAvailableBadge" class="badge badge-slate">0 available</span>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="damagedQuantity">Damaged Quantity</label>
+                        <label for="damagedQuantity" data-i18n="reports.th_qty_lost">Damaged Quantity</label>
                         <input type="number" step="any" min="0.0001" id="damagedQuantity" class="form-control" placeholder="Enter damaged quantity" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="damagedUnitSelect">Counting Unit</label>
+                        <label for="damagedUnitSelect" data-i18n="table.unit">Counting Unit</label>
                         <select id="damagedUnitSelect" class="form-control" required onchange="updateDamagedConversion()"></select>
                     </div>
 
                     <div class="form-group" id="damagedConversionBox" style="display:none;">
-                        <label>Packaging Conversion (Base Unit Multiplier)</label>
+                        <label data-i18n="stockin.conversion_box_title">Packaging Conversion (Base Unit Multiplier)</label>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span id="damagedConversionPrefix" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">1 package =</span>
                             <input type="number" step="any" min="0.0001" id="damagedConversionFactor" class="form-control" style="max-width:140px;" value="1" placeholder="1.0" oninput="onDamagedFactorInput()">
                             <span id="damagedBaseUnitSuffix" style="font-size:13px; font-weight:600; color:var(--text-primary);">base units</span>
                         </div>
-                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">Enter how many base units are contained in 1 selected package unit.</small>
+                        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;" data-i18n="stockin.conversion_hint">Enter how many base units are contained in 1 selected package unit.</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="damagedReasonSelect">Damage / Loss Reason</label>
+                        <label for="damagedReasonSelect" data-i18n="damaged.reason">Damage / Loss Reason</label>
                         <select id="damagedReasonSelect" class="form-control" required>
                             <option value="Broken / Shattered during handling">Broken / Shattered during handling</option>
                             <option value="Water / Moisture / Weather Damage">Water / Moisture / Weather Damage</option>
@@ -1305,18 +1319,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="damagedReasonNotes">Additional Notes / Incident Details (Optional)</label>
+                        <label for="damagedReasonNotes" data-i18n="damaged.notes">Additional Notes / Incident Details (Optional)</label>
                         <input type="text" id="damagedReasonNotes" class="form-control" placeholder="e.g. Broken sack during truck unloading">
                     </div>
 
                     <div class="form-group">
-                        <label for="damagedDate">Incident Date</label>
+                        <label for="damagedDate" data-i18n="damaged.date">Incident Date</label>
                         <input type="date" id="damagedDate" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('damagedStockModal')">✕ Cancel</button>
-                    <button type="submit" class="btn btn-danger">⚠️ Deduct from Shelf Stock</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('damagedStockModal')">✕ <span data-i18n="action.cancel">Cancel</span></button>
+                    <button type="submit" class="btn btn-danger" data-i18n="damaged.submit">⚠️ Deduct from Shelf Stock</button>
                 </div>
             </form>
         </div>
@@ -1326,7 +1340,7 @@
     <div class="modal-backdrop" id="editPurchasingModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3>✏️ Edit Item in Purchasing Cart</h3>
+                <h3 data-i18n="modal.purch_edit_title">✏️ Edit Item in Purchasing Cart</h3>
                 <button class="modal-close-btn" onclick="closeModal('editPurchasingModal')">✕</button>
             </div>
             <form id="editPurchasingForm" onsubmit="handleEditPurchasingSave(event)">
@@ -1336,25 +1350,25 @@
                         Product: <strong id="editPurchasingProdTitle">Product</strong>
                     </p>
                     <div class="form-group">
-                        <label for="editPurchasingQty">Order Quantity (<span id="editPurchasingUnitDisplay">units</span>)</label>
+                        <label for="editPurchasingQty"><span data-i18n="purchasing.order_qty">Order Quantity</span> (<span id="editPurchasingUnitDisplay">units</span>)</label>
                         <input type="number" step="any" min="0.01" id="editPurchasingQty" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="editPurchasingColor">Color / Specifications</label>
+                        <label for="editPurchasingColor" data-i18n="purchasing.color_spec">Color / Specifications</label>
                         <input type="text" id="editPurchasingColor" class="form-control" placeholder="e.g. Standard, Red, 500m">
                     </div>
                     <div class="form-group">
-                        <label for="editPurchasingDestinations">Target Destination Branches</label>
+                        <label for="editPurchasingDestinations" data-i18n="purchasing.destinations">Target Destination Branches</label>
                         <input type="text" id="editPurchasingDestinations" class="form-control" placeholder="e.g. Downtown Branch, West Hub">
                     </div>
                     <div class="form-group">
-                        <label for="editPurchasingNotes">Logistics Notes</label>
+                        <label for="editPurchasingNotes" data-i18n="purchasing.notes">Logistics Notes</label>
                         <input type="text" id="editPurchasingNotes" class="form-control" placeholder="Supplier remarks or instructions">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editPurchasingModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">💾 Update Cart Item</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editPurchasingModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="modal.purch_update_btn">💾 Update Cart Item</button>
                 </div>
             </form>
         </div>
@@ -1364,31 +1378,31 @@
     <div class="modal-backdrop" id="changePasswordModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3>🔑 Change Your Password</h3>
+                <h3 data-i18n="modal.change_pass_title">🔑 Change Your Password</h3>
                 <button class="modal-close-btn" onclick="closeModal('changePasswordModal')">✕</button>
             </div>
             <form id="changePasswordForm" onsubmit="handleChangePasswordSubmit(event)">
                 <div class="modal-body">
-                    <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:16px;">
+                    <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:16px;" data-i18n="modal.change_pass_subtitle">
                         Ensure your account remains secure by choosing a strong password (at least 6 characters).
                     </p>
                     <div class="form-group">
-                        <label for="changePassOld">Current Password</label>
+                        <label for="changePassOld" data-i18n="modal.old_pass">Current Password</label>
                         <input type="password" id="changePassOld" class="form-control" placeholder="••••••••" required autocomplete="current-password">
                     </div>
                     <div class="form-group">
-                        <label for="changePassNew">New Password</label>
+                        <label for="changePassNew" data-i18n="modal.new_pass">New Password</label>
                         <input type="password" id="changePassNew" class="form-control" placeholder="••••••••" minlength="6" required autocomplete="new-password">
-                        <small style="color:var(--text-muted); font-size:11.5px;">Minimum 6 characters.</small>
+                        <small style="color:var(--text-muted); font-size:11.5px;" data-i18n="modal.pass_min_chars">Minimum 6 characters.</small>
                     </div>
                     <div class="form-group">
-                        <label for="changePassConfirm">Confirm New Password</label>
+                        <label for="changePassConfirm" data-i18n="modal.confirm_pass">Confirm New Password</label>
                         <input type="password" id="changePassConfirm" class="form-control" placeholder="••••••••" minlength="6" required autocomplete="new-password">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="changePassSubmitBtn">💾 Update Password</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="changePassSubmitBtn">💾 <span data-i18n="action.save">Update Password</span></button>
                 </div>
             </form>
         </div>
@@ -1398,7 +1412,7 @@
     <div class="modal-backdrop" id="adminResetPasswordModal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3>🔑 Admin Reset User Password</h3>
+                <h3 data-i18n="modal.admin_reset_title">🔑 Admin Reset User Password</h3>
                 <button class="modal-close-btn" onclick="closeModal('adminResetPasswordModal')">✕</button>
             </div>
             <form id="adminResetPasswordForm" onsubmit="handleAdminResetPasswordSubmit(event)">
@@ -1408,20 +1422,21 @@
                         Target Account: <strong id="adminResetPassUsernameLabel" style="color:var(--primary);">User</strong>
                     </p>
                     <div class="form-group">
-                        <label for="adminResetPassNew">Set New Password</label>
+                        <label for="adminResetPassNew" data-i18n="modal.new_pass">Set New Password</label>
                         <input type="password" id="adminResetPassNew" class="form-control" placeholder="Enter new password (min 6 characters)" minlength="6" required>
-                        <small style="color:var(--text-muted); font-size:11.5px;">As an administrator, you can directly set or reset this account's password without knowing their old password.</small>
+                        <small style="color:var(--text-muted); font-size:11.5px;" data-i18n="modal.admin_reset_hint">As an administrator, you can directly set or reset this account's password without knowing their old password.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('adminResetPasswordModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="adminResetPassSubmitBtn">💾 Save New Password</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('adminResetPasswordModal')" data-i18n="action.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="adminResetPassSubmitBtn">💾 <span data-i18n="action.save">Save New Password</span></button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Application Script Modules -->
+    <script src="/js/i18n.js"></script>
     <script src="/js/export-utils.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/dashboard.js"></script>

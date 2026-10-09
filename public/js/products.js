@@ -78,7 +78,7 @@ function renderProductsList() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="empty-state-cell" style="text-align:center; padding:36px; color:var(--text-muted);">
-                    No product profiles found matching active search criteria.
+                    ${t('prod.empty_state', 'No product profiles found matching active search criteria.')}
                 </td>
             </tr>
         `;
@@ -90,15 +90,15 @@ function renderProductsList() {
 
     tbody.innerHTML = productsCache.map(p => {
         const categoryBadge = p.type === 1 
-            ? '<span class="badge badge-blue">Electronics Matrix</span>' 
-            : '<span class="badge badge-emerald">Construction Supply</span>';
+            ? `<span class="badge badge-blue">${t('prod.filter_type_1', 'Electronics Matrix')}</span>` 
+            : `<span class="badge badge-emerald">${t('prod.filter_type_2', 'Construction Supply')}</span>`;
 
         const colorSwatch = p.color 
             ? `<div style="display:flex; align-items:center; gap:6px;">
                  <span style="width:14px; height:14px; border-radius:50%; background:${p.color}; border:1px solid rgba(255,255,255,0.2); display:inline-block;"></span>
                  <span style="font-family:var(--font-mono); font-size:12px;">${p.color}</span>
                </div>` 
-            : '<span style="color:var(--text-muted); font-size:12px;">Default</span>';
+            : `<span style="color:var(--text-muted); font-size:12px;">${t('table.color', 'Color')}: Standard</span>`;
 
         const minAlert = parseFloat(p.min_stock_alert !== undefined ? p.min_stock_alert : 5);
         const currentTotal = parseFloat(p.total_quantity || 0);
@@ -111,23 +111,23 @@ function renderProductsList() {
 
         return `
             <tr>
-                <td data-label="ID" style="font-family:var(--font-mono); font-weight:600; color:var(--text-muted);">#${p.id}</td>
-                <td data-label="Brand"><strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong></td>
-                <td class="card-main-title" data-label="Product Name">
+                <td data-label="${t('table.id', 'ID')}" style="font-family:var(--font-mono); font-weight:600; color:var(--text-muted);">#${p.id}</td>
+                <td data-label="${t('table.brand', 'Brand')}"><strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong></td>
+                <td class="card-main-title" data-label="${t('table.product', 'Product Name')}">
                     <div style="font-weight:700; font-size:14.5px; color:var(--text-primary);">${escapeHtml(p.name)}</div>
                     ${p.description ? `<div style="font-size:12px; color:var(--text-muted); margin-top:2px;">${escapeHtml(p.description)}</div>` : ''}
                 </td>
-                <td data-label="Category">${categoryBadge}</td>
-                <td data-label="Total Stock">${stockBadge}</td>
-                <td data-label="Unit" style="font-weight:500;">${p.unit_symbol || p.unit_name || '-'}</td>
-                <td data-label="Color">${colorSwatch}</td>
-                <td class="action-column" data-label="Actions" style="text-align:right;">
+                <td data-label="${t('table.category', 'Category')}">${categoryBadge}</td>
+                <td data-label="${t('table.stock', 'Total Stock')}">${stockBadge}</td>
+                <td data-label="${t('table.unit', 'Unit')}" style="font-weight:500;">${p.unit_symbol || p.unit_name || '-'}</td>
+                <td data-label="${t('table.color', 'Color')}">${colorSwatch}</td>
+                <td class="action-column" data-label="${t('table.actions', 'Actions')}" style="text-align:right;">
                     ${canManage ? `
                         <div style="display:inline-flex; gap:6px;">
-                            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditProductModal(${p.id})">Edit</button>
-                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteProduct(${p.id})">Delete</button>
+                            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditProductModal(${p.id})">${t('action.edit', 'Edit')}</button>
+                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteProduct(${p.id})">${t('action.delete', 'Delete')}</button>
                         </div>
-                    ` : '<span style="color:var(--text-muted); font-size:12px;">View Only</span>'}
+                    ` : `<span style="color:var(--text-muted); font-size:12px;">${t('action.view_only', 'View Only')}</span>`}
                 </td>
             </tr>
         `;

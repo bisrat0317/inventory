@@ -89,22 +89,30 @@ function buildNavigation(role, allowedMenus = null) {
 
     // Build Desktop Nav
     if (desktopNav) {
-        desktopNav.innerHTML = navItems.map(item => `
-            <a href="#/${item.id}" class="nav-tab" data-nav="${item.id}" onclick="navigateTo('${item.id}')">
-                <span>${item.icon}</span>
-                <span>${item.label}</span>
-            </a>
-        `).join('');
+        desktopNav.innerHTML = navItems.map(item => {
+            const key = 'nav.' + item.id.replace(/-/g, '_');
+            const label = typeof window.t === 'function' ? window.t(key, item.label) : item.label;
+            return `
+                <a href="#/${item.id}" class="nav-tab" data-nav="${item.id}" onclick="navigateTo('${item.id}')">
+                    <span>${item.icon}</span>
+                    <span>${label}</span>
+                </a>
+            `;
+        }).join('');
     }
 
     // Build Mobile Drawer Nav
     if (mobileNav) {
-        mobileNav.innerHTML = navItems.map(item => `
-            <a href="#/${item.id}" class="drawer-link" data-nav="${item.id}" onclick="navigateTo('${item.id}'); toggleMobileDrawer();">
-                <span>${item.icon}</span>
-                <span>${item.label}</span>
-            </a>
-        `).join('');
+        mobileNav.innerHTML = navItems.map(item => {
+            const key = 'nav.' + item.id.replace(/-/g, '_');
+            const label = typeof window.t === 'function' ? window.t(key, item.label) : item.label;
+            return `
+                <a href="#/${item.id}" class="drawer-link" data-nav="${item.id}" onclick="navigateTo('${item.id}'); toggleMobileDrawer();">
+                    <span>${item.icon}</span>
+                    <span>${label}</span>
+                </a>
+            `;
+        }).join('');
     }
 }
 

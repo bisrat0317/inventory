@@ -67,22 +67,22 @@ async function renderDashboardView() {
 
                         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13.5px;">
-                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">Volume Balance</span>
-                                <span class="badge badge-slate" style="font-size:12px;">${formatQuantity(branch.totalProducts)} units</span>
+                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">${t('dash.volume_balance', 'Volume Balance')}</span>
+                                <span class="badge badge-slate" style="font-size:12px;">${formatQuantity(branch.totalProducts)} ${t('dash.units_count', 'units')}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13.5px;">
-                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">Low Stock Alerts</span>
-                                <span class="badge ${lowStockClass}" style="font-size:12px;">${branch.lowStockCount} lines</span>
+                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">${t('dash.kpi_low_stock', 'Low Stock Alerts')}</span>
+                                <span class="badge ${lowStockClass}" style="font-size:12px;">${branch.lowStockCount} ${t('dash.lines_count', 'lines')}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13.5px;">
-                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">Today's Realized Revenue</span>
+                                <span style="font-weight:600; color:var(--text-secondary); font-size:12px; text-transform:uppercase;">${t('dash.today_revenue', "Today's Realized Revenue")}</span>
                                 <span class="badge ${salesClass}" style="font-size:12px;">$${formatMoney(branch.todaySales)}</span>
                             </div>
                         </div>
                     </div>
 
                     <button class="btn btn-secondary" style="width:100%; justify-content:center;" onclick="navigateTo('branch-ops/${branch.id}')">
-                        <span>Open Branch Control Hub</span>
+                        <span>${t('dash.open_hub', 'Open Branch Control Hub')}</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                 </div>

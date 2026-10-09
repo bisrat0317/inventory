@@ -61,7 +61,7 @@ function renderAccountsList() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="empty-state-cell" style="text-align:center; padding:32px; color:var(--text-muted);">
-                    No user accounts created yet. Click "Add New Account" above to get started.
+                    ${t('accounts.empty_state', 'No user accounts created yet. Click "Add New Account" above to get started.')}
                 </td>
             </tr>
         `;
@@ -73,20 +73,20 @@ function renderAccountsList() {
     tbody.innerHTML = accountsCache.map(acc => {
         let roleBadge = '';
         if (acc.role === 'admin') {
-            roleBadge = '<span class="badge badge-purple font-bold">ADMIN (ALL ACCESS)</span>';
+            roleBadge = `<span class="badge badge-purple font-bold">${t('role.admin', 'ADMIN')}</span>`;
         } else if (acc.role === 'manager') {
-            roleBadge = '<span class="badge badge-blue">MANAGER</span>';
+            roleBadge = `<span class="badge badge-blue">${t('role.manager', 'MANAGER')}</span>`;
         } else {
-            roleBadge = '<span class="badge badge-slate">STAFF</span>';
+            roleBadge = `<span class="badge badge-slate">${t('role.staff', 'STAFF')}</span>`;
         }
 
         let branchScopeDisplay = '';
         if (acc.role === 'admin') {
-            branchScopeDisplay = '<span style="color:var(--purple); font-weight:600;">⚡ All Branches</span>';
+            branchScopeDisplay = `<span style="color:var(--purple); font-weight:600;">⚡ ${t('dash.branch_filter_all', 'All Branches')}</span>`;
         } else if (acc.branch_names && acc.branch_names.trim()) {
             branchScopeDisplay = `<div style="font-size:13px; color:var(--text-secondary);">${escapeHtml(acc.branch_names)}</div>`;
         } else {
-            branchScopeDisplay = '<span style="color:var(--danger); font-size:12px;">⚠️ No Assigned Branches</span>';
+            branchScopeDisplay = `<span style="color:var(--danger); font-size:12px;">⚠️ ${t('accounts.no_branches', 'No Assigned Branches')}</span>`;
         }
 
         const dateStr = acc.created_at ? new Date(acc.created_at).toLocaleDateString() : '-';
@@ -94,7 +94,7 @@ function renderAccountsList() {
 
         return `
             <tr>
-                <td data-label="Username" class="card-main-title">
+                <td data-label="${t('table.username', 'Username')}" class="card-main-title">
                     <div style="font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
                         <span>👤</span>
                         <span>${escapeHtml(acc.username)}</span>
@@ -102,19 +102,19 @@ function renderAccountsList() {
                     </div>
                     <div style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-mono);">ID: #${acc.id}</div>
                 </td>
-                <td data-label="Email Address" style="color:var(--text-secondary);">${escapeHtml(acc.email || 'None')}</td>
-                <td data-label="Role">${roleBadge}</td>
-                <td data-label="Assigned Branches">${branchScopeDisplay}</td>
-                <td data-label="Date Created" style="font-size:13px; color:var(--text-muted);">${dateStr}</td>
-                <td data-label="Actions" class="actions-cell">
+                <td data-label="${t('table.email', 'Email Address')}" style="color:var(--text-secondary);">${escapeHtml(acc.email || 'None')}</td>
+                <td data-label="${t('table.role', 'Role')}">${roleBadge}</td>
+                <td data-label="${t('table.branches', 'Assigned Branches')}">${branchScopeDisplay}</td>
+                <td data-label="${t('table.created', 'Date Created')}" style="font-size:13px; color:var(--text-muted);">${dateStr}</td>
+                <td data-label="${t('table.actions', 'Actions')}" class="actions-cell">
                     <div style="display:inline-flex; gap:6px; width:100%; justify-content:flex-end; flex-wrap:wrap;">
                         <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" onclick="openAdminResetPasswordModal(${acc.id}, '${escapeHtml(acc.username)}')" title="Reset Password for this User">
                             <span>🔑</span>
-                            <span>Password</span>
+                            <span>${t('accounts.reset_pass_btn', 'Password')}</span>
                         </button>
-                        <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">Edit</button>
+                        <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">${t('action.edit', 'Edit')}</button>
                         ${!isSelf ? `
-                            <button class="btn btn-danger-outline" style="padding:5px 10px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">Delete</button>
+                            <button class="btn btn-danger-outline" style="padding:5px 10px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">${t('action.delete', 'Delete')}</button>
                         ` : ''}
                     </div>
                 </td>
@@ -169,13 +169,14 @@ function renderRolePermissionsMatrix() {
         const adminAllowed = permissions.admin ? (permissions.admin[menu.id] !== false) : true;
         const managerAllowed = permissions.manager ? Boolean(permissions.manager[menu.id]) : false;
         const staffAllowed = permissions.staff ? Boolean(permissions.staff[menu.id]) : false;
+        const localizedLabel = t('nav.' + menu.id, menu.label);
 
         return `
             <tr>
-                <td data-label="Module / Menu">
+                <td data-label="${t('accounts.th_menu', 'Menu / Module')}">
                     <div style="font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
                         <span style="font-size:16px;">${menu.icon || '📌'}</span>
-                        <span>${escapeHtml(menu.label)}</span>
+                        <span>${escapeHtml(localizedLabel)}</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
                         ${escapeHtml(menu.description || '')}

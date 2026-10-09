@@ -155,7 +155,7 @@ function renderPurchasingLowStockScanner(alerts) {
     if (!container) return;
 
     if (alerts.length === 0) {
-        container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">✅ All facility branch inventories are within safe operating capacity.</div>';
+        container.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">${t('dash.empty_low_stock', '✅ All facility branch inventories are within safe operating capacity.')}</div>`;
         return;
     }
 
@@ -171,12 +171,12 @@ function renderPurchasingLowStockScanner(alerts) {
                         ${escapeHtml(item.brand)} - ${escapeHtml(item.product_name)}
                     </div>
                     <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
-                        🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(current, sym)} ${escapeHtml(sym)} left</span>
-                        <span style="color:var(--text-muted); font-size:11px;">(Min alert: &le; ${formatNumber(threshold, sym)} ${escapeHtml(sym)})</span>
+                        🏢 <strong>${escapeHtml(item.branch_name)}</strong> · <span style="color:var(--danger); font-weight:700;">${formatNumber(current, sym)} ${escapeHtml(sym)}</span>
+                        <span style="color:var(--text-muted); font-size:11px;">(Min: &le; ${formatNumber(threshold, sym)} ${escapeHtml(sym)})</span>
                     </div>
                 </div>
                 <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addLowStockToPurchasing('${escapeHtml(item.brand)}', '${escapeHtml(item.product_name)}', '${escapeHtml(item.branch_name)}', ${threshold}, ${current}, '${escapeHtml(sym)}')">
-                    🛒 Add to Cart
+                    🛒 ${t('action.add_to_cart', 'Add to Cart')}
                 </button>
             </div>
         `;
@@ -479,7 +479,7 @@ function removePurchasingLine(index) {
 function renderPurchasingTable() {
     const tbody = document.getElementById('purchasingManifestTableBody');
     const countBadge = document.getElementById('purchasingListCount');
-    if (countBadge) countBadge.textContent = `${purchasingManifestItems.length} items`;
+    if (countBadge) countBadge.textContent = `${purchasingManifestItems.length} ${t('table.stock', 'items')}`;
 
     if (!tbody) return;
 
@@ -487,7 +487,7 @@ function renderPurchasingTable() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="9" class="empty-state-cell" style="text-align:center; padding:36px; color:var(--text-muted);">
-                    🛒 No line items in purchasing cart. Add items or scan low-stock alerts.
+                    🛒 ${t('purchasing.empty_cart', 'No line items in purchasing cart. Add items or scan low-stock alerts.')}
                 </td>
             </tr>
         `;
@@ -497,27 +497,27 @@ function renderPurchasingTable() {
     tbody.innerHTML = purchasingManifestItems.map((item, idx) => {
         return `
             <tr>
-                <td data-label="Item #" style="font-weight:700; color:var(--text-muted); font-size:12px;">
+                <td data-label="#" style="font-weight:700; color:var(--text-muted); font-size:12px;">
                     #${idx + 1}
                 </td>
-                <td data-label="Brand"><strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong></td>
-                <td class="card-main-title" data-label="Product Name" style="font-weight:700; color:var(--text-primary); font-size:14.5px;">${escapeHtml(item.name)}</td>
-                <td data-label="Color / Spec" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.color || 'Standard')}</td>
-                <td data-label="Destination(s)" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.destinations || 'All Branches')}</td>
-                <td data-label="Order Qty"><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(item.unit || '')}</span></td>
-                <td data-label="Unit Price ($)" style="min-width:85px;">
+                <td data-label="${t('table.brand', 'Brand')}"><strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong></td>
+                <td class="card-main-title" data-label="${t('table.product', 'Product Name')}" style="font-weight:700; color:var(--text-primary); font-size:14.5px;">${escapeHtml(item.name)}</td>
+                <td data-label="${t('purchasing.color_spec', 'Color / Spec')}" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.color || 'Standard')}</td>
+                <td data-label="${t('table.branches', 'Destination(s)')}" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.destinations || 'All Branches')}</td>
+                <td data-label="${t('purchasing.order_qty', 'Order Qty')}"><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(item.unit || '')}</span></td>
+                <td data-label="${t('table.price', 'Unit Price ($)')}" style="min-width:85px;">
                     <input type="text" class="form-control" style="padding:4px 8px; font-size:13px; height:32px; width:100%;" placeholder="$ Price" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
                 </td>
-                <td data-label="Remarks / Notes">
+                <td data-label="${t('table.type', 'Remarks / Notes')}">
                     <input type="text" class="form-control" style="padding:4px 8px; font-size:13px; height:32px; width:100%; min-width:120px;" placeholder="Add remarks..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
                 </td>
-                <td class="action-column" data-label="Actions" style="text-align:right; white-space:nowrap;">
+                <td class="action-column" data-label="${t('table.actions', 'Actions')}" style="text-align:right; white-space:nowrap;">
                     <div style="display:flex; gap:6px; width:100%;">
                         <button class="btn btn-secondary" style="flex:1; padding:6px 10px; font-size:12px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
-                            ✏️ Edit
+                            ✏️ ${t('action.edit', 'Edit')}
                         </button>
                         <button class="btn btn-danger-outline" style="flex:1; padding:6px 10px; font-size:12px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
-                            ✕ Remove
+                            ✕ ${t('action.delete', 'Remove')}
                         </button>
                     </div>
                 </td>
