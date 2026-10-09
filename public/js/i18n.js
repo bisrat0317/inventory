@@ -268,6 +268,23 @@ const translations = {
         'backup.prompt_schedule_email': 'Please enter a valid recipient email address for the automated schedule.',
         'backup.success_schedule': 'Automated backup schedule settings saved successfully.',
 
+        // Camera Scanner & OCR
+        'scanner.title': 'Camera Scanner',
+        'scanner.subtitle': 'Point camera at product label, text, or barcode',
+        'scanner.subtitle_stockin': 'Scan incoming box, packaging text, or barcode to select product',
+        'scanner.subtitle_stockout': 'Scan item to dispatch / sell to auto-fill sales line',
+        'scanner.subtitle_filter': 'Scan product label to filter catalog instantly',
+        'scanner.subtitle_autofill': 'Scan product box to auto-fill Name and Brand',
+        'scanner.scan_btn': 'Scan Label',
+        'scanner.scan_search': 'Scan to Search',
+        'scanner.scan_autofill': 'Scan Packaging to Auto-Fill',
+        'scanner.position_hint': 'Position label or text inside frame',
+        'scanner.matched_product': 'Matched Product in Catalog',
+        'scanner.apply_btn': 'Apply & Select Product',
+        'scanner.capture_btn': 'Capture & Scan',
+        'scanner.scanning': 'Reading Text...',
+        'scanner.camera_error': 'Camera permission required. You can also upload a photo below.',
+
         // Branches View
         'branches.title': 'Branch Management',
         'branches.subtitle': 'Add, view, and manage your warehouse and store branch locations.',
@@ -334,14 +351,22 @@ const translations = {
         'login.verifying': 'Verifying credentials...',
         'login.network_error': 'Network or server error. Please ensure the backend server is running.',
 
-        // Messages & Toasts
-        'msg.success': 'Operation completed successfully.',
-        'msg.error': 'An error occurred.',
-        'msg.cart_saved': '💾 Purchasing cart draft saved to local browser cache!',
-        'msg.cart_cleared': 'Purchasing cart cleared and draft reset.',
-        'msg.pass_updated': 'Password was changed successfully!',
-        'msg.pass_mismatch': 'New password and confirmation password do not match.',
-        'msg.pass_short': 'Password must be at least 6 characters long.'
+        // Camera Scanner
+        'scanner.title': 'Camera Scanner',
+        'scanner.subtitle': 'Point camera at product label, packaging text, or barcode',
+        'scanner.subtitle_stockin': 'Scan incoming box, packaging text, or barcode to select product',
+        'scanner.subtitle_stockout': 'Scan item to dispatch / sell to auto-fill sales line',
+        'scanner.subtitle_filter': 'Scan product label to filter catalog instantly',
+        'scanner.subtitle_autofill': 'Scan product box to auto-fill Name and Brand',
+        'scanner.scan_search': 'Scan to Search',
+        'scanner.scan_autofill': 'Scan Packaging to Auto-Fill',
+        'scanner.scan_btn': 'Scan Label',
+        'scanner.matched_product': 'Matched Product in Catalog',
+        'scanner.apply_btn': 'Apply & Select Product',
+        'scanner.capture_btn': 'Capture & Scan',
+        'scanner.scanning': 'Reading Text...',
+        'scanner.position_hint': 'Position label or text inside frame',
+        'scanner.camera_error': 'Camera permission required. You can also upload a photo below.'
     },
     am: {
         // App Header & Branding
@@ -605,6 +630,23 @@ const translations = {
         'backup.prompt_schedule_email': 'እባክዎ ለራስ-ሰር መርሐግብሩ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።',
         'backup.success_schedule': 'የራስ-ሰር ባክአፕ መርሐግብር ቅንብሮች በተሳካ ሁኔታ ተመዝግበዋል።',
 
+        // Camera Scanner & OCR
+        'scanner.title': 'የካሜራ ስካነር',
+        'scanner.subtitle': 'የምርት ስም፣ ጽሑፍ ወይም ባርኮድ በካሜራ ይቃኙ',
+        'scanner.subtitle_stockin': 'የዕቃውን ካርቶን ወይም ሌብል በመቃኘት ምርቱን ይምረጡ',
+        'scanner.subtitle_stockout': 'የሚሸጠውን ዕቃ በመቃኘት በቀጥታ ለሽያጭ ያዘጋጁ',
+        'scanner.subtitle_filter': 'የምርቱን ሌብል በመቃኘት በቀጥታ ፈልግ',
+        'scanner.subtitle_autofill': 'የምርቱን ካርቶን ጽሑፍ አንብበህ ስም እና ብራንድ ሙላ',
+        'scanner.scan_btn': 'በካሜራ ቃኝ',
+        'scanner.scan_search': 'በካሜራ ፈልግ',
+        'scanner.scan_autofill': 'ከካሜራ ጽሑፍ አንብብ',
+        'scanner.position_hint': 'የምርቱን ጽሑፍ በክፈፉ ውስጥ ያስገቡ',
+        'scanner.matched_product': 'በካታሎግ ውስጥ የተገኘ ምርት',
+        'scanner.apply_btn': 'ምርቱን ምረጥ',
+        'scanner.capture_btn': 'ፎቶ አንሳና ቃኝ',
+        'scanner.scanning': 'ጽሑፉ እየተነበበ ነው...',
+        'scanner.camera_error': 'የካሜራ ፈቃድ ያስፈልጋል። ከታች ፎቶ መጫንም ይችላሉ።',
+
         // Branches View
         'branches.title': 'የቅርንጫፎች አስተዳደር',
         'branches.subtitle': 'የመጋዘን እና የሱቅ ቅርንጫፎችን ይመዝግቡ፣ ይመልከቱ እና ያስተዳድሩ።',
@@ -671,14 +713,22 @@ const translations = {
         'login.verifying': 'መረጃ በመረጋገጥ ላይ...',
         'login.network_error': 'የሰርቨር ወይም የኔትወርክ ስህተት። እባክዎ ሰርቨሩ እየሰራ መሆኑን ያረጋግጡ።',
 
-        // Messages & Toasts
-        'msg.success': 'ስራው በተሳካ ሁኔታ ተጠናቋል!',
-        'msg.error': 'ስህተት ተፈጥሯል!',
-        'msg.cart_saved': '💾 የግዢ ረቂቁ በኮምፒውተርዎ ላይ ተቀምጧል!',
-        'msg.cart_cleared': 'የግዢ ቅርጫቱ ጸድቷል።',
-        'msg.pass_updated': 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!',
-        'msg.pass_mismatch': 'አዲሱ የይለፍ ቃል እና ማረጋገጫው አይመሳሰሉም።',
-        'msg.pass_short': 'የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።'
+        // Camera Scanner
+        'scanner.title': 'የካሜራ ስካነር',
+        'scanner.subtitle': 'ካሜራውን ወደ ምርቱ ሌብል፣ ማሸጊያ ጽሑፍ ወይም ባርኮድ ያነጣጥሩ',
+        'scanner.subtitle_stockin': 'ምርቱን ለመምረጥ የማሸጊያ ጽሑፍ ወይም ባርኮድ ይቃኙ',
+        'scanner.subtitle_stockout': 'ለሽያጭ ወይም ለማውጣት ዕቃውን ወይም ባርኮዱን ይቃኙ',
+        'scanner.subtitle_filter': 'ካታሎጉን ለማጣራት የምርት ሌብል ይቃኙ',
+        'scanner.subtitle_autofill': 'ስም እና ብራንድ በራስ-ሰር ለመሙላት ማሸጊያ ይቃኙ',
+        'scanner.scan_search': 'በስካን ፈልግ',
+        'scanner.scan_autofill': 'ማሸጊያ በመቃኘት ራስ-ሰር ሙላ',
+        'scanner.scan_btn': 'ሌብል ቅዳ',
+        'scanner.matched_product': 'በሲስተሙ የተገኘ ተመሳሳይ ምርት',
+        'scanner.apply_btn': 'ምርቱን ምረጥና ተግብር',
+        'scanner.capture_btn': 'ፎቶ አንሳና ቃኝ',
+        'scanner.scanning': 'ጽሑፍ በማንበብ ላይ...',
+        'scanner.position_hint': 'ሌብሉን ወይም ጽሑፉን በፍሬሙ ውስጥ ያስተካክሉ',
+        'scanner.camera_error': 'የካሜራ ፈቃድ ያስፈልጋል። ከታች ፎቶ መስቀልም ይችላሉ።'
     }
 };
 

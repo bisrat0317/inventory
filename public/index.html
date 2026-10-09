@@ -14,6 +14,9 @@
     <!-- Chart.js for Executive Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Tesseract.js for On-Device Camera OCR Text Recognition -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/print.css">
@@ -311,6 +314,9 @@
                         <option value="" data-i18n="prod.filter_all_units">All Units</option>
                     </select>
                 </div>
+                <button type="button" class="btn btn-secondary" onclick="openCameraScanner('products-filter')" title="Scan product label with camera" style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+                    📷 <span data-i18n="scanner.scan_search">Scan to Search</span>
+                </button>
                 <button class="btn btn-secondary" onclick="resetProductFilters()" data-i18n="prod.reset_filters">Reset</button>
             </div>
 
@@ -344,9 +350,6 @@
                     <h1 data-i18n="stockin.title">Stock In / Receiving Logistics</h1>
                     <p data-i18n="stockin.subtitle">Log incoming purchases, multi-unit conversions, and batch inventory replenishments.</p>
                 </div>
-                <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
-                    ⚠️ Register Damaged / Lost Items
-                </button>
             </div>
 
             <div class="responsive-split-grid split-grid-form-table">
@@ -362,7 +365,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="stockin.select_product">Search and Choose Product</label>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label data-i18n="stockin.select_product" style="margin:0;">Search and Choose Product</label>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="openCameraScanner('stock-in')" title="Scan barcode or product packaging with camera" style="display:flex; align-items:center; gap:5px; padding:3px 8px; font-size:12px;">
+                                    📷 <span data-i18n="scanner.scan_btn">Scan Label</span>
+                                </button>
+                            </div>
                             <div class="search-select-wrapper" id="stockInProductSearchSelect">
                                 <div class="search-select-trigger" id="stockInProductTrigger">Click to select product...</div>
                                 <div class="search-select-dropdown" id="stockInProductDropdown">
@@ -446,9 +454,6 @@
                     <h1 data-i18n="stockout.title">Stock Out / Sales Dispatch</h1>
                     <p data-i18n="stockout.subtitle">Process sales transactions and drain inventory using strict First-In First-Out (FIFO) allocation.</p>
                 </div>
-                <button class="btn btn-danger-outline" onclick="openDamagedStockModal()">
-                    ⚠️ Register Damaged / Lost Items
-                </button>
             </div>
 
             <div class="responsive-split-grid split-grid-form-table">
@@ -464,7 +469,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="stockout.select_product">Search and Choose Product</label>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label data-i18n="stockout.select_product" style="margin:0;">Search and Choose Product</label>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="openCameraScanner('stock-out')" title="Scan barcode or product text with camera" style="display:flex; align-items:center; gap:5px; padding:3px 8px; font-size:12px;">
+                                    📷 <span data-i18n="scanner.scan_btn">Scan Label</span>
+                                </button>
+                            </div>
                             <div class="search-select-wrapper" id="stockOutProductSearchSelect">
                                 <div class="search-select-trigger" id="stockOutProductTrigger">Click to select product...</div>
                                 <div class="search-select-dropdown" id="stockOutProductDropdown">
@@ -1138,6 +1148,11 @@
             <form id="productForm" onsubmit="handleProductFormSubmit(event)">
                 <input type="hidden" id="productFormId">
                 <div class="modal-body">
+                    <div style="margin-bottom:14px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="openCameraScanner('product-form')" style="display:inline-flex; align-items:center; gap:6px;">
+                            📷 <span data-i18n="scanner.scan_autofill">Scan Packaging to Auto-Fill</span>
+                        </button>
+                    </div>
                     <div class="form-group">
                         <label for="prodFormName" data-i18n="modal.prod_name">Product Name</label>
                         <input type="text" id="prodFormName" class="form-control" placeholder="e.g. Cat6 Network Cable" required>
@@ -1539,6 +1554,76 @@
         </div>
     </div>
 
+    <!-- Modal: Camera Text & Barcode Scanner -->
+    <div class="modal-backdrop" id="cameraScannerModal" style="display:none; z-index:9999;">
+        <div class="modal-dialog" style="max-width:540px; width:95%; padding:0; overflow:hidden; border-radius:var(--radius-lg);">
+            <div class="modal-header" style="padding:14px 18px; background:var(--surface-elevated); border-bottom:1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">📷</span>
+                    <div>
+                        <h3 id="scannerModalTitle" style="font-size:16px; margin:0;" data-i18n="scanner.title">Camera Scanner</h3>
+                        <p id="scannerModalSubtitle" style="font-size:12px; color:var(--text-muted); margin:0;" data-i18n="scanner.subtitle">Point camera at product label, text, or barcode</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeCameraScanner()">✕</button>
+            </div>
+            
+            <div class="modal-body scanner-viewport" style="padding:0; min-height:300px;">
+                <!-- Video Stream -->
+                <video id="scannerVideo" playsinline autoplay muted style="width:100%; max-height:360px; object-fit:cover; display:block;"></video>
+                <canvas id="scannerCanvas" style="display:none;"></canvas>
+
+                <!-- Visual Scanner Overlay & Laser Guide -->
+                <div class="scanner-overlay">
+                    <div class="scanner-target-box">
+                        <div class="scanner-laser"></div>
+                    </div>
+                    <span id="scannerStatusText" class="scanner-status-pill">
+                        Position label or text inside frame
+                    </span>
+                </div>
+            </div>
+
+            <!-- Scanner Controls & Result Drawer -->
+            <div style="padding:14px 18px; background:var(--surface); border-top:1px solid var(--border-color);">
+                <!-- Live Detected Match Banner -->
+                <div id="scannerMatchResult" style="display:none; margin-bottom:12px; padding:10px 14px; background:var(--success-bg); border:1px solid var(--success-border); border-radius:var(--radius-md);">
+                    <div style="font-size:11px; font-weight:700; color:var(--success); text-transform:uppercase;">✓ <span data-i18n="scanner.matched_product">Matched Product in Catalog</span></div>
+                    <div id="scannerMatchName" style="font-weight:700; color:var(--text-primary); font-size:14px; margin-top:2px;">-</div>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnApplyScanMatch" style="margin-top:8px; width:100%; justify-content:center;">
+                        <span data-i18n="scanner.apply_btn">Apply &amp; Select Product</span>
+                    </button>
+                </div>
+
+                <!-- Raw Detected Text Display -->
+                <div id="scannerDetectedTextContainer" style="display:none; margin-bottom:12px; padding:10px 12px; background:var(--surface-hover); border:1px solid var(--border-color); border-radius:var(--radius-md); font-size:12px;">
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:600; margin-bottom:4px;">Detected Text:</div>
+                    <div id="scannerDetectedText" style="font-weight:600; color:var(--text-primary); word-break:break-word; max-height:60px; overflow-y:auto;">-</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="switchCameraFacingMode()" id="btnFlipCamera" title="Switch between Front and Back camera">
+                            🔄 Flip
+                        </button>
+                        <label class="btn btn-secondary btn-sm" style="margin:0; cursor:pointer;" title="Upload an image from gallery or disk">
+                            📁 Upload
+                            <input type="file" id="scannerPhotoUploadInput" accept="image/*" style="display:none;" onchange="handleScannerPhotoUpload(event)">
+                        </label>
+                    </div>
+
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeCameraScanner()" data-i18n="action.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="btnCaptureOCR" onclick="captureAndProcessFrame()">
+                            📸 <span data-i18n="scanner.capture_btn">Capture &amp; Scan</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Script Modules -->
     <script src="/js/i18n.js"></script>
     <script src="/js/export-utils.js"></script>
@@ -1551,6 +1636,7 @@
     <script src="/js/reports.js"></script>
     <script src="/js/purchasing.js"></script>
     <script src="/js/backup.js"></script>
+    <script src="/js/scanner.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

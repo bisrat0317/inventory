@@ -1723,3 +1723,56 @@ tr:hover td {
     }
 }
 
+/* ==========================================================================
+   CAMERA SCANNER & OCR OVERLAYS
+   ========================================================================== */
+.scanner-viewport {
+    position: relative;
+    width: 100%;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    max-height: 420px;
+}
+
+.scanner-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-target-box {
+    width: 80%;
+    max-width: 380px;
+    height: 65%;
+    max-height: 240px;
+    border: 2px dashed rgba(59, 130, 246, 0.9);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+.scanner-laser {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ef4444, #3b82f6, #10b981, transparent);
+    box-shadow: 0 0 10px #3b82f6;
+    animation: scannerLaser 2s infinite ease-in-out;
+}
+
+@keyframes scannerLaser {
+    0% { top: 4%; opacity: 0.7; }
+    50% { top: 94%; opacity: 1; }
+    100% { top: 4%; opacity: 0.7; }
+}
+
