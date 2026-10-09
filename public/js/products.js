@@ -77,7 +77,7 @@ function renderProductsList() {
     if (!productsCache || productsCache.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align:center; padding:36px; color:var(--text-muted);">
+                <td colspan="8" class="empty-state-cell" style="text-align:center; padding:36px; color:var(--text-muted);">
                     No product profiles found matching active search criteria.
                 </td>
             </tr>
@@ -111,17 +111,17 @@ function renderProductsList() {
 
         return `
             <tr>
-                <td style="font-family:var(--font-mono); font-weight:600; color:var(--text-muted);">#${p.id}</td>
-                <td><strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong></td>
-                <td>
-                    <div style="font-weight:600;">${escapeHtml(p.name)}</div>
+                <td data-label="ID" style="font-family:var(--font-mono); font-weight:600; color:var(--text-muted);">#${p.id}</td>
+                <td data-label="Brand"><strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong></td>
+                <td class="card-main-title" data-label="Product Name">
+                    <div style="font-weight:700; font-size:14.5px; color:var(--text-primary);">${escapeHtml(p.name)}</div>
                     ${p.description ? `<div style="font-size:12px; color:var(--text-muted); margin-top:2px;">${escapeHtml(p.description)}</div>` : ''}
                 </td>
-                <td>${categoryBadge}</td>
-                <td>${stockBadge}</td>
-                <td style="font-weight:500;">${p.unit_symbol || p.unit_name || '-'}</td>
-                <td>${colorSwatch}</td>
-                <td style="text-align:right;">
+                <td data-label="Category">${categoryBadge}</td>
+                <td data-label="Total Stock">${stockBadge}</td>
+                <td data-label="Unit" style="font-weight:500;">${p.unit_symbol || p.unit_name || '-'}</td>
+                <td data-label="Color">${colorSwatch}</td>
+                <td class="action-column" data-label="Actions" style="text-align:right;">
                     ${canManage ? `
                         <div style="display:inline-flex; gap:6px;">
                             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditProductModal(${p.id})">Edit</button>
@@ -347,7 +347,7 @@ async function openArchiveViewModal() {
         if (archived.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align:center; padding:28px; color:var(--text-muted);">
+                    <td colspan="6" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
                         No inactive or deleted products found.
                     </td>
                 </tr>
@@ -355,13 +355,13 @@ async function openArchiveViewModal() {
         } else {
             tbody.innerHTML = archived.map(p => `
                 <tr>
-                    <td style="font-family:var(--font-mono); color:var(--text-muted);">#${p.id}</td>
-                    <td><strong>${escapeHtml(p.brand)}</strong></td>
-                    <td>${escapeHtml(p.name)}</td>
-                    <td>${p.type === 1 ? 'Electronics' : 'Construction'}</td>
-                    <td>${p.unit_symbol || p.unit_name || '-'}</td>
-                    <td style="text-align:right;">
-                        <button class="btn btn-primary" style="padding:3px 10px; font-size:12px;" onclick="restoreProduct(${p.id})">
+                    <td data-label="ID" style="font-family:var(--font-mono); color:var(--text-muted);">#${p.id}</td>
+                    <td data-label="Brand"><strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong></td>
+                    <td class="card-main-title" data-label="Product Name" style="font-weight:600;">${escapeHtml(p.name)}</td>
+                    <td data-label="Category"><span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}">${p.type === 1 ? 'Electronics' : 'Construction'}</span></td>
+                    <td data-label="Unit">${p.unit_symbol || p.unit_name || '-'}</td>
+                    <td class="action-column" data-label="Actions" style="text-align:right;">
+                        <button class="btn btn-primary" style="padding:6px 14px; font-size:12.5px; width:100%; justify-content:center;" onclick="restoreProduct(${p.id})">
                             Restore to Active Stock
                         </button>
                     </td>

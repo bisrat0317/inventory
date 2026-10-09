@@ -351,7 +351,7 @@ function renderPurchasingTable() {
     if (purchasingManifestItems.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" style="text-align:center; padding:36px; color:var(--text-muted);">
+                <td colspan="9" class="empty-state-cell" style="text-align:center; padding:36px; color:var(--text-muted);">
                     🛒 No line items in purchasing cart. Add items or scan low-stock alerts.
                 </td>
             </tr>
@@ -362,27 +362,29 @@ function renderPurchasingTable() {
     tbody.innerHTML = purchasingManifestItems.map((item, idx) => {
         return `
             <tr>
-                <td style="text-align:center; font-weight:700; color:var(--text-muted); font-size:12px;">
-                    ${idx + 1}
+                <td data-label="Item #" style="font-weight:700; color:var(--text-muted); font-size:12px;">
+                    #${idx + 1}
                 </td>
-                <td><strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong></td>
-                <td style="font-weight:600; color:var(--text-primary);">${escapeHtml(item.name)}</td>
-                <td style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.color || 'Standard')}</td>
-                <td style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.destinations || 'All Branches')}</td>
-                <td><strong style="color:var(--primary); font-size:13px;">${formatNumber(item.qty, item.unit)}</strong> <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(item.unit || '')}</span></td>
-                <td style="width:75px;">
-                    <input type="text" class="form-control" style="padding:3px 6px; font-size:12px; height:28px; width:70px;" placeholder="$" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
+                <td data-label="Brand"><strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong></td>
+                <td class="card-main-title" data-label="Product Name" style="font-weight:700; color:var(--text-primary); font-size:14.5px;">${escapeHtml(item.name)}</td>
+                <td data-label="Color / Spec" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.color || 'Standard')}</td>
+                <td data-label="Destination(s)" style="color:var(--text-secondary); font-size:12.5px;">${escapeHtml(item.destinations || 'All Branches')}</td>
+                <td data-label="Order Qty"><strong style="color:var(--primary); font-size:13.5px;">${formatNumber(item.qty, item.unit)}</strong> <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(item.unit || '')}</span></td>
+                <td data-label="Unit Price ($)" style="min-width:85px;">
+                    <input type="text" class="form-control" style="padding:4px 8px; font-size:13px; height:32px; width:100%;" placeholder="$ Price" value="${escapeHtml(item.price || '')}" onchange="updatePurchasingPrice(${idx}, this.value)">
                 </td>
-                <td>
-                    <input type="text" class="form-control" style="padding:3px 8px; font-size:12px; height:28px; min-width:130px;" placeholder="Add remarks or instructions..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
+                <td data-label="Remarks / Notes">
+                    <input type="text" class="form-control" style="padding:4px 8px; font-size:13px; height:32px; width:100%; min-width:120px;" placeholder="Add remarks..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
                 </td>
-                <td class="action-column" style="text-align:right; white-space:nowrap; width:110px;">
-                    <button class="btn btn-secondary" style="padding:2px 7px; font-size:11px; margin-right:3px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
-                        ✏️ Edit
-                    </button>
-                    <button class="btn btn-danger-outline" style="padding:2px 7px; font-size:11px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
-                        ✕ Remove
-                    </button>
+                <td class="action-column" data-label="Actions" style="text-align:right; white-space:nowrap;">
+                    <div style="display:flex; gap:6px; width:100%;">
+                        <button class="btn btn-secondary" style="flex:1; padding:6px 10px; font-size:12px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-danger-outline" style="flex:1; padding:6px 10px; font-size:12px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
+                            ✕ Remove
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;

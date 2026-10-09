@@ -52,7 +52,7 @@ function renderAccountsList() {
     if (accountsCache.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align:center; padding:32px; color:var(--text-muted);">
+                <td colspan="6" class="empty-state-cell" style="text-align:center; padding:32px; color:var(--text-muted);">
                     No user accounts created yet. Click "Add New Account" above to get started.
                 </td>
             </tr>
@@ -86,7 +86,7 @@ function renderAccountsList() {
 
         return `
             <tr>
-                <td>
+                <td data-label="Username" class="card-main-title">
                     <div style="font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
                         <span>👤</span>
                         <span>${escapeHtml(acc.username)}</span>
@@ -94,15 +94,15 @@ function renderAccountsList() {
                     </div>
                     <div style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-mono);">ID: #${acc.id}</div>
                 </td>
-                <td style="color:var(--text-secondary);">${escapeHtml(acc.email || 'None')}</td>
-                <td>${roleBadge}</td>
-                <td>${branchScopeDisplay}</td>
-                <td style="font-size:13px; color:var(--text-muted);">${dateStr}</td>
-                <td style="text-align:right;">
-                    <div style="display:inline-flex; gap:6px;">
-                        <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">Edit</button>
+                <td data-label="Email Address" style="color:var(--text-secondary);">${escapeHtml(acc.email || 'None')}</td>
+                <td data-label="Role">${roleBadge}</td>
+                <td data-label="Assigned Branches">${branchScopeDisplay}</td>
+                <td data-label="Date Created" style="font-size:13px; color:var(--text-muted);">${dateStr}</td>
+                <td data-label="Actions" class="actions-cell">
+                    <div style="display:inline-flex; gap:8px; width:100%; justify-content:flex-end;">
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">Edit</button>
                         ${!isSelf ? `
-                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">Delete</button>
+                            <button class="btn btn-danger-outline" style="padding:6px 12px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">Delete</button>
                         ` : ''}
                     </div>
                 </td>

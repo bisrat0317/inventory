@@ -34,7 +34,7 @@ function renderBranchesList() {
     if (branchesCache.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted);">
+                <td colspan="5" class="empty-state-cell" style="text-align:center; padding:32px; color:var(--text-muted);">
                     No branch locations added yet. Click "Add New Branch" above to get started.
                 </td>
             </tr>
@@ -53,27 +53,27 @@ function renderBranchesList() {
 
         return `
             <tr>
-                <td>
+                <td data-label="Branch Name" class="card-main-title">
                     <div style="font-weight:700; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
                         <span>🏢</span>
                         <span>${escapeHtml(b.name)}</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Branch ID #${b.id}</div>
                 </td>
-                <td>${categoryBadge}</td>
-                <td style="color:var(--text-secondary);">
+                <td data-label="Category">${categoryBadge}</td>
+                <td data-label="Location" style="color:var(--text-secondary);">
                     ${b.location ? `📍 ${escapeHtml(b.location)}` : '<span style="color:var(--text-muted);">No address set</span>'}
                 </td>
-                <td>
+                <td data-label="Items In Stock">
                     <span class="badge ${unitsOnFloor > 0 ? 'badge-blue' : 'badge-slate'}" style="font-size:13px; font-weight:600;">
                         ${formatNumber(unitsOnFloor)} Items in Stock
                     </span>
                 </td>
-                <td style="text-align:right;">
+                <td data-label="Actions" class="actions-cell">
                     ${canManage ? `
-                        <div style="display:inline-flex; gap:6px;">
-                            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openEditBranchModal(${b.id})">Edit</button>
-                            <button class="btn btn-danger-outline" style="padding:4px 10px; font-size:12px;" onclick="deleteBranch(${b.id}, ${unitsOnFloor})">Delete Branch</button>
+                        <div style="display:inline-flex; gap:8px; width:100%; justify-content:flex-end;">
+                            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="openEditBranchModal(${b.id})">Edit</button>
+                            <button class="btn btn-danger-outline" style="padding:6px 12px; font-size:12px;" onclick="deleteBranch(${b.id}, ${unitsOnFloor})">Delete Branch</button>
                         </div>
                     ` : '<span style="color:var(--text-muted); font-size:12px;">Admin Only</span>'}
                 </td>

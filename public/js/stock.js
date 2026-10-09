@@ -306,7 +306,7 @@ function renderStockInInventoryTable(items) {
     if (items.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align:center; padding:28px; color:var(--text-muted);">
+                <td colspan="7" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
                     No live inventory records in this facility.
                 </td>
             </tr>
@@ -318,15 +318,15 @@ function renderStockInInventoryTable(items) {
         const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
-            <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
-            <td><strong>${escapeHtml(item.brand)}</strong></td>
-            <td style="font-weight:600;">${escapeHtml(item.name)}</td>
-            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td>${formatDualStock(item.total_quantity, unitSymbol, item.unit_name)}</td>
-            <td>
+            <td data-label="ID" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
+            <td data-label="Brand"><strong>${escapeHtml(item.brand)}</strong></td>
+            <td class="card-main-title" data-label="Product Nomenclature" style="font-weight:700;">${escapeHtml(item.name)}</td>
+            <td data-label="Category"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
+            <td data-label="Stock on Hand"><strong style="color:var(--primary);">${formatDualStock(item.total_quantity, unitSymbol, item.unit_name)}</strong></td>
+            <td data-label="Color">
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
             </td>
-            <td style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
+            <td data-label="Description" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
         </tr>
     `}).join('');
 }
@@ -635,7 +635,7 @@ function renderStockOutInventoryTable(items) {
     if (items.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align:center; padding:28px; color:var(--text-muted);">
+                <td colspan="8" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
                     No live inventory on shelves in this branch facility.
                 </td>
             </tr>
@@ -647,16 +647,16 @@ function renderStockOutInventoryTable(items) {
         const unitSymbol = item.unit_symbol || item.unit_name || '';
         return `
         <tr>
-            <td style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
-            <td style="font-weight:600;">${escapeHtml(item.name)}</td>
-            <td><strong>${escapeHtml(item.brand)}</strong></td>
-            <td><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
-            <td>${escapeHtml(unitSymbol)}</td>
-            <td>${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</td>
-            <td>
+            <td data-label="ID" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
+            <td class="card-main-title" data-label="Product Title" style="font-weight:700;">${escapeHtml(item.name)}</td>
+            <td data-label="Brand"><strong>${escapeHtml(item.brand)}</strong></td>
+            <td data-label="Category"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? 'Electronics' : 'Construction'}</span></td>
+            <td data-label="Unit">${escapeHtml(unitSymbol)}</td>
+            <td data-label="Available Stock"><strong style="color:var(--success);">${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</strong></td>
+            <td data-label="Color">
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : '<span style="color:var(--text-muted); font-size:12px;">Default</span>'}
             </td>
-            <td style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
+            <td data-label="Description" style="font-size:12px; color:var(--text-muted);">${escapeHtml(item.description || '-')}</td>
         </tr>
     `}).join('');
 }

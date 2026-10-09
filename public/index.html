@@ -134,7 +134,7 @@
                 <div class="kpi-value" style="color:var(--success);" id="opsRangeSalesValue">$0.00</div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1.6fr 1.4fr; gap:24px;" class="responsive-split-grid">
+            <div class="responsive-split-grid split-grid-ops">
                 <!-- Left: Live Inventory Balance -->
                 <div class="card">
                     <div class="card-header">
@@ -305,7 +305,7 @@
                 </button>
             </div>
 
-            <div style="display:grid; grid-template-columns:420px 1fr; gap:28px;" class="responsive-split-grid">
+            <div class="responsive-split-grid split-grid-form-table">
                 <!-- Stock In Form -->
                 <div class="card">
                     <div class="card-header">
@@ -407,7 +407,7 @@
                 </button>
             </div>
 
-            <div style="display:grid; grid-template-columns:420px 1fr; gap:28px;" class="responsive-split-grid">
+            <div class="responsive-split-grid split-grid-form-table">
                 <!-- Stock Out Form -->
                 <div class="card">
                     <div class="card-header">
@@ -535,7 +535,7 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 320px minmax(0, 1fr); gap:20px;" class="responsive-split-grid">
+            <div class="responsive-split-grid split-grid-purchasing">
                 <div style="display:flex; flex-direction:column; gap:20px;" class="no-print">
                     <!-- Custom Line Item Adder -->
                     <div class="card">
@@ -758,7 +758,7 @@
 
             <!-- Interactive Chart.js Graphs Panel -->
             <div id="analyticsChartsWrapper" style="display:none; margin-bottom:24px;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;" class="responsive-split-grid">
+                <div class="responsive-split-grid split-grid-dual">
                     <div class="card">
                         <div class="card-header"><h3 class="card-title">Financial Summary (Sales vs Cost vs Profit)</h3></div>
                         <div style="position:relative; height:300px;"><canvas id="financialBarCanvas"></canvas></div>
@@ -824,7 +824,7 @@
             </div>
 
             <!-- Split Ledger: Stock In & Stock Out -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;" class="responsive-split-grid">
+            <div class="responsive-split-grid split-grid-dual" style="margin-top:24px;">
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">📥 Stock In History (Purchases)</h3>

@@ -172,7 +172,7 @@ function renderFacilityMatrix(branchMetrics) {
 
     const branches = Object.values(branchMetrics || {});
     if (branches.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">No sales or stock transactions recorded in this period.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state-cell" style="text-align:center; padding:24px; color:var(--text-muted);">No sales or stock transactions recorded in this period.</td></tr>`;
         return;
     }
 
@@ -185,13 +185,13 @@ function renderFacilityMatrix(branchMetrics) {
         // Branch Summary Header Row
         rowsHtml += `
             <tr style="background:var(--surface-hover); font-weight:700;">
-                <td style="color:var(--text-primary); font-size:14px;">
+                <td class="card-main-title" data-label="Branch" style="color:var(--text-primary); font-size:14.5px;">
                     🏢 <strong>${escapeHtml(branch.name)}</strong>
                 </td>
-                <td>-</td>
-                <td style="color:var(--primary); font-weight:700;">${formatCurrency(branch.revenue)}</td>
-                <td style="color:var(--warning); font-weight:700;">${formatCurrency(branch.cogs)}</td>
-                <td style="color:${branchProfit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:800;">
+                <td data-label="Units Sold" style="color:var(--text-muted);">-</td>
+                <td data-label="Total Sales" style="color:var(--primary); font-weight:700;">${formatCurrency(branch.revenue)}</td>
+                <td data-label="Cost of Items Sold" style="color:var(--warning); font-weight:700;">${formatCurrency(branch.cogs)}</td>
+                <td data-label="Net Profit" style="color:${branchProfit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:800;">
                     ${formatCurrency(branchProfit)}
                 </td>
             </tr>
@@ -201,7 +201,7 @@ function renderFacilityMatrix(branchMetrics) {
         if (prodKeys.length === 0) {
             rowsHtml += `
                 <tr>
-                    <td colspan="5" style="padding-left:36px; font-size:12.5px; color:var(--text-muted); font-style:italic;">
+                    <td colspan="5" class="empty-state-cell" style="padding-left:24px; font-size:12.5px; color:var(--text-muted); font-style:italic;">
                         No product sales recorded in this branch during this period.
                     </td>
                 </tr>
@@ -214,16 +214,16 @@ function renderFacilityMatrix(branchMetrics) {
 
                 rowsHtml += `
                     <tr>
-                        <td style="padding-left:36px; font-size:13px;">
-                            <span style="color:var(--text-secondary); font-weight:500;">↳ ${escapeHtml(prod.brand)} - ${escapeHtml(prod.name)}</span>
+                        <td class="card-main-title" data-label="Product">
+                            <span style="color:var(--text-secondary); font-weight:600;">↳ ${escapeHtml(prod.brand)} - ${escapeHtml(prod.name)}</span>
                             <span class="badge ${prod.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">
                                 ${prod.type === 1 ? 'Electronics' : 'Construction'}
                             </span>
                         </td>
-                        <td style="font-size:13px;">${formatNumber(prod.qty_sold, prod.symbol)} ${escapeHtml(prod.symbol || '')}</td>
-                        <td style="font-size:13px; color:var(--text-primary);">${formatCurrency(prod.total_revenue)}</td>
-                        <td style="font-size:13px; color:var(--text-muted);">${formatCurrency(prod.total_cogs)}</td>
-                        <td style="font-size:13px; font-weight:600; color:${prodProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                        <td data-label="Units Sold" style="font-size:13px;">${formatNumber(prod.qty_sold, prod.symbol)} ${escapeHtml(prod.symbol || '')}</td>
+                        <td data-label="Total Sales" style="font-size:13px; color:var(--text-primary);">${formatCurrency(prod.total_revenue)}</td>
+                        <td data-label="Cost of Items Sold" style="font-size:13px; color:var(--text-muted);">${formatCurrency(prod.total_cogs)}</td>
+                        <td data-label="Net Profit" style="font-size:13px; font-weight:600; color:${prodProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">
                             ${formatCurrency(prodProfit)} <span style="font-size:11px; opacity:0.8;">(${marginPercent})</span>
                         </td>
                     </tr>
@@ -248,7 +248,7 @@ function renderDamagedLedger(damagedList) {
     if (!tbody) return;
 
     if (!damagedList || damagedList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">✅ No damaged or lost products reported in this time period.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state-cell" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">✅ No damaged or lost products reported in this time period.</td></tr>`;
         return;
     }
 
@@ -259,24 +259,24 @@ function renderDamagedLedger(damagedList) {
 
         return `
             <tr>
-                <td style="font-size:12.5px; font-family:var(--font-mono); color:var(--text-muted);">${dateStr}</td>
-                <td style="font-size:13px; font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(r.branch_name)}</td>
-                <td style="font-size:13px;">
+                <td data-label="Date" style="font-size:12.5px; font-family:var(--font-mono); color:var(--text-muted);">${dateStr}</td>
+                <td data-label="Branch" style="font-size:13px; font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(r.branch_name)}</td>
+                <td class="card-main-title" data-label="Product" style="font-size:13.5px;">
                     <strong>${escapeHtml(r.brand)}</strong> - ${escapeHtml(r.product_name)}
                     <span class="badge ${r.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
                         ${r.type === 1 ? 'Electronics' : 'Construction'}
                     </span>
                 </td>
-                <td style="font-size:13px;">
+                <td data-label="Quantity Lost" style="font-size:13px;">
                     <span class="badge badge-red font-bold">
                         -${formatNumber(qty, r.symbol)} ${escapeHtml(r.symbol || '')}
                     </span>
                 </td>
-                <td style="font-size:13px; max-width:260px;">
+                <td data-label="Incident Reason" style="font-size:13px;">
                     <span style="font-weight:500; color:var(--text-primary);">${escapeHtml(r.reason || 'Damaged')}</span>
                 </td>
-                <td style="font-size:12.5px; color:var(--text-secondary);">${escapeHtml(r.reported_by || 'Admin')}</td>
-                <td style="font-size:13px; font-weight:700; color:var(--danger);">${estLoss > 0 ? formatCurrency(estLoss) : '-'}</td>
+                <td data-label="Reported By" style="font-size:12.5px; color:var(--text-secondary);">${escapeHtml(r.reported_by || 'Admin')}</td>
+                <td data-label="Estimated Loss" style="font-size:13.5px; font-weight:700; color:var(--danger);">${estLoss > 0 ? formatCurrency(estLoss) : '-'}</td>
             </tr>
         `;
     }).join('');
@@ -293,15 +293,15 @@ function renderLedgers(inbound, outbound) {
 
     if (inTbody) {
         if (!inbound || inbound.length === 0) {
-            inTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No purchases recorded in this period.</td></tr>';
+            inTbody.innerHTML = '<tr><td colspan="5" class="empty-state-cell" style="text-align:center; padding:20px; color:var(--text-muted);">No purchases recorded in this period.</td></tr>';
         } else {
             inTbody.innerHTML = inbound.map(r => `
                 <tr>
-                    <td style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
-                    <td style="font-size:13px;">🏢 ${escapeHtml(r.branch_name)}</td>
-                    <td style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
-                    <td style="font-size:13px;"><span class="badge badge-blue">+${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
-                    <td style="font-size:13px; font-weight:600; color:var(--info);">${formatCurrency(r.purchase_price)}</td>
+                    <td data-label="Date" style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
+                    <td data-label="Branch" style="font-size:13px; font-weight:600;">🏢 ${escapeHtml(r.branch_name)}</td>
+                    <td class="card-main-title" data-label="Product" style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
+                    <td data-label="Quantity In" style="font-size:13px;"><span class="badge badge-blue">+${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
+                    <td data-label="Purchase Cost" style="font-size:13px; font-weight:600; color:var(--info);">${formatCurrency(r.purchase_price)}</td>
                 </tr>
             `).join('');
         }
@@ -314,15 +314,15 @@ function renderLedgers(inbound, outbound) {
 
     if (outTbody) {
         if (!outbound || outbound.length === 0) {
-            outTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No sales recorded in this period.</td></tr>';
+            outTbody.innerHTML = '<tr><td colspan="5" class="empty-state-cell" style="text-align:center; padding:20px; color:var(--text-muted);">No sales recorded in this period.</td></tr>';
         } else {
             outTbody.innerHTML = outbound.map(r => `
                 <tr>
-                    <td style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
-                    <td style="font-size:13px;">🏢 ${escapeHtml(r.branch_name)}</td>
-                    <td style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
-                    <td style="font-size:13px;"><span class="badge badge-emerald">-${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
-                    <td style="font-size:13px; font-weight:600; color:var(--success);">${formatCurrency(r.sold_price)}</td>
+                    <td data-label="Date" style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
+                    <td data-label="Branch" style="font-size:13px; font-weight:600;">🏢 ${escapeHtml(r.branch_name)}</td>
+                    <td class="card-main-title" data-label="Product" style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
+                    <td data-label="Quantity Sold" style="font-size:13px;"><span class="badge badge-emerald">-${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
+                    <td data-label="Sale Amount" style="font-size:13px; font-weight:600; color:var(--success);">${formatCurrency(r.sold_price)}</td>
                 </tr>
             `).join('');
         }
@@ -337,7 +337,7 @@ function renderRemainingStock(items) {
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:var(--text-muted);">No inventory found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state-cell" style="text-align:center; padding:24px; color:var(--text-muted);">No inventory found.</td></tr>';
         return;
     }
 
@@ -357,17 +357,17 @@ function renderRemainingStock(items) {
 
         return `
             <tr>
-                <td style="font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(item.branch_name)}</td>
-                <td>
+                <td data-label="Branch" style="font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(item.branch_name)}</td>
+                <td class="card-main-title" data-label="Product">
                     <strong style="color:var(--text-primary);">${escapeHtml(item.brand)}</strong> - ${escapeHtml(item.product_name)}
                     <span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
                         ${item.type === 1 ? 'Electronics' : 'Construction'}
                     </span>
                 </td>
-                <td>
-                    <strong style="font-size:14px;">${formatNumber(qty, item.symbol)}</strong> ${escapeHtml(item.symbol || '')}
+                <td data-label="Remaining Stock">
+                    <strong style="font-size:14px; color:var(--primary);">${formatNumber(qty, item.symbol)}</strong> ${escapeHtml(item.symbol || '')}
                 </td>
-                <td>${evalBadge}</td>
+                <td data-label="Stock Status">${evalBadge}</td>
             </tr>
         `;
     }).join('');

@@ -138,7 +138,7 @@ async function renderBranchOpsView(branchId) {
         const invTableBody = document.getElementById('opsInventoryTableBody');
         if (invTableBody) {
             if (data.inventory.length === 0) {
-                invTableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); font-style:italic; padding:24px;">No active inventory records at this branch.</td></tr>`;
+                invTableBody.innerHTML = `<tr><td colspan="3" class="empty-state-cell" style="text-align:center; color:var(--text-muted); font-style:italic; padding:24px;">No active inventory records at this branch.</td></tr>`;
             } else {
                 invTableBody.innerHTML = data.inventory.map(row => {
                     const catBadge = row.type === 1 
@@ -146,9 +146,13 @@ async function renderBranchOpsView(branchId) {
                         : `<span class="badge badge-amber">Construction</span>`;
                     return `
                         <tr>
-                            <td><strong>${escapeHtml(row.brand)}</strong> – ${escapeHtml(row.name)}</td>
-                            <td>${catBadge}</td>
-                            <td><strong style="color:var(--primary);">${formatQuantity(row.quantity)} ${escapeHtml(row.symbol || '')}</strong></td>
+                            <td class="card-main-title" data-label="Product Profile">
+                                <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(row.brand)} – ${escapeHtml(row.name)}</div>
+                            </td>
+                            <td data-label="Category">${catBadge}</td>
+                            <td data-label="Shelf Balance">
+                                <strong style="color:var(--primary); font-size:14px;">${formatQuantity(row.quantity)} ${escapeHtml(row.symbol || '')}</strong>
+                            </td>
                         </tr>
                     `;
                 }).join('');
