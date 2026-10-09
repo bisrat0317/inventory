@@ -127,6 +127,14 @@ CREATE TABLE IF NOT EXISTS damaged_stock (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 12. Role Menu Permissions
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role VARCHAR(50) NOT NULL,
+    menu_id VARCHAR(50) NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT true,
+    PRIMARY KEY (role, menu_id)
+);
+
 -- Indices for high performance queries
 CREATE INDEX IF NOT EXISTS idx_products_is_deleted ON products (is_deleted);
 

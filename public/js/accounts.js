@@ -1,12 +1,17 @@
 /**
- * StockMatrix - User Accounts Management Module
+ * StockMatrix - User Accounts & Role Permissions Management Module
  */
 
 let accountsCache = [];
 let availableBranchesCache = [];
+let rolePermissionsCache = {
+    roles: ['admin', 'manager', 'staff'],
+    menus: [],
+    permissions: { admin: {}, manager: {}, staff: {} }
+};
 
 /**
- * Load all user accounts
+ * Load all user accounts & role permissions
  */
 async function loadAccounts() {
     try {
@@ -19,6 +24,9 @@ async function loadAccounts() {
             availableBranchesCache = data.availableBranches || [];
             renderAccountsList();
         }
+
+        // Also load role navigation permissions matrix
+        await loadRolePermissions();
     } catch (err) {
         console.error('Error loading accounts:', err);
         showToast(err.message, 'error');
@@ -43,7 +51,7 @@ async function ensureBranchesLoaded() {
 }
 
 /**
- * Render Accounts table
+ * Render Accounts table with edit, delete, and admin password reset
  */
 function renderAccountsList() {
     const tbody = document.getElementById('accountsTableBody');
@@ -99,16 +107,202 @@ function renderAccountsList() {
                 <td data-label="Assigned Branches">${branchScopeDisplay}</td>
                 <td data-label="Date Created" style="font-size:13px; color:var(--text-muted);">${dateStr}</td>
                 <td data-label="Actions" class="actions-cell">
-                    <div style="display:inline-flex; gap:8px; width:100%; justify-content:flex-end;">
-                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">Edit</button>
+                    <div style="display:inline-flex; gap:6px; width:100%; justify-content:flex-end; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" onclick="openAdminResetPasswordModal(${acc.id}, '${escapeHtml(acc.username)}')" title="Reset Password for this User">
+                            <span>🔑</span>
+                            <span>Password</span>
+                        </button>
+                        <button class="btn btn-secondary" style="padding:5px 10px; font-size:12px;" onclick="openEditAccountModal(${acc.id})">Edit</button>
                         ${!isSelf ? `
-                            <button class="btn btn-danger-outline" style="padding:6px 12px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">Delete</button>
+                            <button class="btn btn-danger-outline" style="padding:5px 10px; font-size:12px;" onclick="deleteAccount(${acc.id}, '${escapeHtml(acc.username)}')">Delete</button>
                         ` : ''}
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
+}
+
+/**
+ * Load role menu permissions from backend
+ */
+async function loadRolePermissions() {
+    try {
+        const res = await fetch('/api/accounts/roles/permissions');
+        if (!res.ok) throw new Error('Failed to fetch role permissions.');
+        const data = await res.json();
+
+        if (data.success) {
+            rolePermissionsCache = {
+                roles: data.roles || ['admin', 'manager', 'staff'],
+                menus: data.menus || [],
+                permissions: data.permissions || {}
+            };
+            renderRolePermissionsMatrix();
+        }
+    } catch (err) {
+        console.error('Error loading role permissions:', err);
+    }
+}
+
+/**
+ * Render role permissions matrix table
+ */
+function renderRolePermissionsMatrix() {
+    const tbody = document.getElementById('rolePermissionsTableBody');
+    if (!tbody) return;
+
+    const { menus, permissions } = rolePermissionsCache;
+
+    if (!menus || menus.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">
+                    Loading permissions matrix...
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = menus.map(menu => {
+        const adminAllowed = permissions.admin ? (permissions.admin[menu.id] !== false) : true;
+        const managerAllowed = permissions.manager ? Boolean(permissions.manager[menu.id]) : false;
+        const staffAllowed = permissions.staff ? Boolean(permissions.staff[menu.id]) : false;
+
+        return `
+            <tr>
+                <td data-label="Module / Menu">
+                    <div style="font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:16px;">${menu.icon || '📌'}</span>
+                        <span>${escapeHtml(menu.label)}</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                        ${escapeHtml(menu.description || '')}
+                    </div>
+                </td>
+                <td data-label="Admin Access" style="text-align:center;">
+                    <label style="display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:4px;">
+                        <input type="checkbox" ${adminAllowed ? 'checked' : ''} ${menu.id === 'accounts' ? 'disabled title="Admin must retain Accounts access to prevent lockout"' : ''} onchange="handlePermissionToggle('admin', '${menu.id}', this.checked)" style="width:18px; height:18px; cursor:pointer; accent-color:var(--purple);">
+                    </label>
+                </td>
+                <td data-label="Manager Access" style="text-align:center;">
+                    <label style="display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:4px;">
+                        <input type="checkbox" ${managerAllowed ? 'checked' : ''} onchange="handlePermissionToggle('manager', '${menu.id}', this.checked)" style="width:18px; height:18px; cursor:pointer; accent-color:var(--primary);">
+                    </label>
+                </td>
+                <td data-label="Staff Access" style="text-align:center;">
+                    <label style="display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:4px;">
+                        <input type="checkbox" ${staffAllowed ? 'checked' : ''} onchange="handlePermissionToggle('staff', '${menu.id}', this.checked)" style="width:18px; height:18px; cursor:pointer; accent-color:var(--slate-500);">
+                    </label>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Handle toggle of role permission checkbox
+ */
+async function handlePermissionToggle(role, menuId, isChecked) {
+    if (!rolePermissionsCache.permissions[role]) {
+        rolePermissionsCache.permissions[role] = {};
+    }
+    rolePermissionsCache.permissions[role][menuId] = isChecked;
+
+    try {
+        const res = await fetch('/api/accounts/roles/permissions', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role,
+                permissions: rolePermissionsCache.permissions[role]
+            })
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+            throw new Error(result.message || 'Failed to update role permissions.');
+        }
+
+        showToast(`Menu permission for '${role.toUpperCase()}' updated!`, 'success');
+
+        // If updated role matches active session role, refresh navigation dynamically
+        if (AppState.currentUser && AppState.currentUser.role === role) {
+            const allowed = Object.keys(rolePermissionsCache.permissions[role]).filter(m => rolePermissionsCache.permissions[role][m]);
+            AppState.currentUser.allowedMenus = allowed;
+            buildNavigation(role, allowed);
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+        // Reload matrix to sync back with database state
+        loadRolePermissions();
+    }
+}
+
+/**
+ * Open Admin Reset / Set Password Modal for any user account
+ */
+function openAdminResetPasswordModal(userId, username) {
+    const userIdInput = document.getElementById('adminResetPassUserId');
+    const usernameLabel = document.getElementById('adminResetPassUsernameLabel');
+    const newPassInput = document.getElementById('adminResetPassNew');
+
+    if (userIdInput) userIdInput.value = userId;
+    if (usernameLabel) usernameLabel.textContent = username;
+    if (newPassInput) newPassInput.value = '';
+
+    openModal('adminResetPasswordModal');
+}
+
+/**
+ * Handle Admin Reset Password Submission
+ */
+async function handleAdminResetPasswordSubmit(e) {
+    e.preventDefault();
+
+    const userId = document.getElementById('adminResetPassUserId').value;
+    const newPassword = document.getElementById('adminResetPassNew').value;
+    const submitBtn = document.getElementById('adminResetPassSubmitBtn');
+
+    if (!userId || !newPassword) {
+        showToast('Please enter a new password.', 'error');
+        return;
+    }
+
+    if (newPassword.trim().length < 6) {
+        showToast('Password must be at least 6 characters long.', 'error');
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving new password...';
+    }
+
+    try {
+        const res = await fetch(`/api/accounts/${userId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword })
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+            throw new Error(result.message || 'Failed to set password.');
+        }
+
+        showToast(result.message || 'Password updated successfully.', 'success');
+        closeModal('adminResetPasswordModal');
+        document.getElementById('adminResetPasswordForm')?.reset();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '💾 Save New Password';
+        }
+    }
 }
 
 /**
@@ -274,3 +468,17 @@ async function deleteAccount(id, username) {
         showToast(err.message, 'error');
     }
 }
+
+// Global exposure
+window.loadAccounts = loadAccounts;
+window.loadRolePermissions = loadRolePermissions;
+window.renderRolePermissionsMatrix = renderRolePermissionsMatrix;
+window.handlePermissionToggle = handlePermissionToggle;
+window.openAdminResetPasswordModal = openAdminResetPasswordModal;
+window.handleAdminResetPasswordSubmit = handleAdminResetPasswordSubmit;
+window.openCreateAccountModal = openCreateAccountModal;
+window.openEditAccountModal = openEditAccountModal;
+window.handleAccountFormSubmit = handleAccountFormSubmit;
+window.handleAccountRoleChange = handleAccountRoleChange;
+window.deleteAccount = deleteAccount;
+

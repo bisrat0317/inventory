@@ -65,10 +65,10 @@ async function initEmbeddedPg() {
             // Ensure schema migrations are applied
             try {
                 await pgliteInstance.exec('ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;');
-            } catch (migErr) {
-                // Ignore if already exists
-            }
+            } catch (migErr) {}
         }
+
+        await setupRolePermissions(pgliteInstance);
     }
     return pgliteInstance;
 }
@@ -142,6 +142,61 @@ async function getClient() {
     }
 }
 
+const SYSTEM_MENUS = [
+    'dashboard',
+    'products',
+    'stock-in',
+    'stock-out',
+    'purchasing',
+    'reports',
+    'branches',
+    'accounts'
+];
+
+const DEFAULT_ROLE_PERMISSIONS = {
+    admin: ['dashboard', 'products', 'stock-in', 'stock-out', 'purchasing', 'reports', 'branches', 'accounts'],
+    manager: ['dashboard', 'products', 'stock-in', 'stock-out', 'purchasing', 'reports'],
+    staff: ['stock-in', 'stock-out']
+};
+
+async function setupRolePermissions(clientOrPool = pool) {
+    try {
+        const createSql = `
+            CREATE TABLE IF NOT EXISTS role_permissions (
+                role VARCHAR(50) NOT NULL,
+                menu_id VARCHAR(50) NOT NULL,
+                is_enabled BOOLEAN NOT NULL DEFAULT true,
+                PRIMARY KEY (role, menu_id)
+            );
+        `;
+        if (typeof clientOrPool.exec === 'function') {
+            await clientOrPool.exec(createSql);
+        } else {
+            await clientOrPool.query(createSql);
+        }
+
+        const countRes = await clientOrPool.query('SELECT COUNT(*) AS cnt FROM role_permissions');
+        const count = parseInt(countRes.rows?.[0]?.cnt || 0, 10);
+        if (count === 0) {
+            console.log('ℹ Populating default role menu permissions...');
+            const roles = ['admin', 'manager', 'staff'];
+            for (const r of roles) {
+                const allowed = DEFAULT_ROLE_PERMISSIONS[r] || [];
+                for (const menu of SYSTEM_MENUS) {
+                    const isEnabled = allowed.includes(menu);
+                    await clientOrPool.query(
+                        'INSERT INTO role_permissions (role, menu_id, is_enabled) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+                        [r, menu, isEnabled]
+                    );
+                }
+            }
+            console.log('✓ Default role menu permissions configured.');
+        }
+    } catch (err) {
+        console.error('Error setting up role permissions table:', err.message);
+    }
+}
+
 /**
  * Test database connection and ensure tables exist
  */
@@ -165,7 +220,14 @@ async function testConnectionAndAutoSetup() {
             seedSql = seedSql.replace(/\$2a\$10\$CwTycUXWue0Thq9StjUM0uXhT\.r9w1w0WJcW8B2u7C\/p8M0YxJXe2/g, defaultPasswordHash);
             await pool.query(seedSql);
             console.log('✓ Tables created and initial seed data populated successfully.');
+        } else {
+            // Apply migration if branch type column doesn't exist
+            try {
+                await pool.query('ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;');
+            } catch (e) {}
         }
+
+        await setupRolePermissions(pool);
     } catch (err) {
         console.log('ℹ External PostgreSQL server not active. Activating Embedded PostgreSQL (PGlite)...');
         await initEmbeddedPg();
@@ -178,5 +240,8 @@ module.exports = {
     query,
     getClient,
     testConnectionAndAutoSetup,
+    setupRolePermissions,
+    SYSTEM_MENUS,
+    DEFAULT_ROLE_PERMISSIONS,
     getActiveEngine: () => activeEngine
 };

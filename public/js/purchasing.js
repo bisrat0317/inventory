@@ -7,6 +7,8 @@ let purchasingProductsCache = [];
 let purchasingBranchesCache = [];
 let selectedPurchasingProduct = null;
 
+const PURCHASING_DRAFT_KEY = 'stockmatrix_purchasing_manifest_draft';
+
 // Expose globally for export utilities
 window.purchasingManifestItems = purchasingManifestItems;
 
@@ -15,6 +17,11 @@ window.purchasingManifestItems = purchasingManifestItems;
  */
 async function loadPurchasingView() {
     try {
+        // Restore from draft cache if memory array is empty
+        if (purchasingManifestItems.length === 0) {
+            loadPurchasingDraft();
+        }
+
         updatePurchasingPrintHeader();
 
         // Fetch products and branches
@@ -177,6 +184,142 @@ function renderPurchasingLowStockScanner(alerts) {
 }
 
 /**
+ * Helper to add or merge product item into purchasingManifestItems
+ * Merges items with same brand, name, and color/spec into a single row, combining quantities and destinations.
+ */
+function addOrMergePurchasingItem(itemData) {
+    const brand = (itemData.brand || '').trim();
+    const name = (itemData.name || '').trim();
+    const color = (itemData.color || 'Standard').trim();
+    const newQty = parseFloat(itemData.qty) || 0;
+    const newDestinations = (itemData.destinations || '')
+        .split(',')
+        .map(d => d.trim())
+        .filter(Boolean);
+
+    const existingIndex = purchasingManifestItems.findIndex(item => 
+        (item.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
+        (item.name || '').trim().toLowerCase() === name.toLowerCase() &&
+        (item.color || 'Standard').trim().toLowerCase() === color.toLowerCase()
+    );
+
+    if (existingIndex >= 0) {
+        // Merge into existing row
+        const existing = purchasingManifestItems[existingIndex];
+        existing.qty = (parseFloat(existing.qty) || 0) + newQty;
+
+        // Merge destination branches without duplicates
+        const currentDests = (existing.destinations || '')
+            .split(',')
+            .map(d => d.trim())
+            .filter(Boolean);
+
+        const combinedDests = Array.from(new Set([...currentDests, ...newDestinations]));
+        existing.destinations = combinedDests.join(', ') || 'All Branches';
+
+        // Merge notes if distinct
+        if (itemData.notes && itemData.notes.trim()) {
+            if (!existing.notes) {
+                existing.notes = itemData.notes.trim();
+            } else if (!existing.notes.includes(itemData.notes.trim())) {
+                existing.notes = `${existing.notes}; ${itemData.notes.trim()}`;
+            }
+        }
+
+        if (itemData.price && !existing.price) {
+            existing.price = itemData.price;
+        }
+
+        autoSavePurchasingDraft();
+        updatePurchasingPrintHeader();
+        renderPurchasingTable();
+
+        showToast(`Merged into 1 row: "${brand} - ${name}" quantity updated to ${formatNumber(existing.qty, existing.unit)} ${existing.unit || ''} (Branches: ${existing.destinations}).`, 'success');
+        return;
+    }
+
+    // Add new line item
+    purchasingManifestItems.push({
+        checked: false,
+        brand: brand,
+        name: name,
+        color: color,
+        destinations: newDestinations.join(', ') || 'All Branches',
+        qty: newQty,
+        price: itemData.price || '',
+        notes: itemData.notes || '',
+        unit: itemData.unit || ''
+    });
+
+    autoSavePurchasingDraft();
+    updatePurchasingPrintHeader();
+    renderPurchasingTable();
+    showToast(`Added "${brand} - ${name}" (${formatNumber(newQty, itemData.unit)} ${itemData.unit || ''}) to purchasing cart.`, 'success');
+}
+
+/**
+ * Auto-save draft to browser cache
+ */
+function autoSavePurchasingDraft() {
+    try {
+        localStorage.setItem(PURCHASING_DRAFT_KEY, JSON.stringify(purchasingManifestItems));
+    } catch (e) {
+        console.warn('LocalStorage save error:', e);
+    }
+}
+
+/**
+ * Manually save purchasing cart draft
+ */
+function savePurchasingDraft(manual = true) {
+    autoSavePurchasingDraft();
+    if (manual) {
+        showToast('💾 Purchasing cart draft saved to local browser cache!', 'success');
+    }
+}
+
+/**
+ * Load draft from browser cache
+ */
+function loadPurchasingDraft() {
+    try {
+        const raw = localStorage.getItem(PURCHASING_DRAFT_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                purchasingManifestItems = parsed;
+                window.purchasingManifestItems = purchasingManifestItems;
+                return true;
+            }
+        }
+    } catch (e) {
+        console.warn('LocalStorage load error:', e);
+    }
+    return false;
+}
+
+/**
+ * Reset / Clear all items in purchasing cart draft
+ */
+function resetPurchasingManifest() {
+    if (purchasingManifestItems.length === 0) {
+        showToast('Purchasing cart is already empty.', 'info');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to clear all items from the purchasing cart draft?')) {
+        return;
+    }
+
+    purchasingManifestItems = [];
+    window.purchasingManifestItems = purchasingManifestItems;
+    localStorage.removeItem(PURCHASING_DRAFT_KEY);
+    updatePurchasingPrintHeader();
+    renderPurchasingTable();
+    showToast('Purchasing cart cleared and draft reset.', 'success');
+}
+
+/**
  * Add Low Stock item to purchasing cart using product's configured minimum threshold
  */
 function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentStock, unitSymbol) {
@@ -185,8 +328,7 @@ function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentS
     const sym = unitSymbol || 'units';
     const suggestedQty = threshold > 0 ? threshold : 5;
 
-    purchasingManifestItems.push({
-        checked: false,
+    addOrMergePurchasingItem({
         brand: brand,
         name: name,
         color: 'Standard',
@@ -196,11 +338,6 @@ function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentS
         notes: `Low Stock Alert (${formatNumber(current, sym)} left, Min alert: ${formatNumber(threshold, sym)} ${sym})`,
         unit: sym
     });
-
-    window.purchasingManifestItems = purchasingManifestItems;
-    updatePurchasingPrintHeader();
-    renderPurchasingTable();
-    showToast(`Added ${brand} - ${name} (${formatNumber(suggestedQty, sym)} ${sym}) to purchasing cart.`, 'success');
 }
 
 /**
@@ -227,8 +364,7 @@ function handlePurchasingAddLine(e) {
     const notes = document.getElementById('purchasingNotes').value.trim() || '';
     const unit = selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || '';
 
-    purchasingManifestItems.push({
-        checked: false,
+    addOrMergePurchasingItem({
         brand: selectedPurchasingProduct.brand,
         name: selectedPurchasingProduct.name,
         color: color,
@@ -239,8 +375,6 @@ function handlePurchasingAddLine(e) {
         unit: unit
     });
 
-    window.purchasingManifestItems = purchasingManifestItems;
-
     // Reset form inputs
     document.getElementById('purchasingQty').value = '';
     document.getElementById('purchasingColor').value = '';
@@ -248,10 +382,6 @@ function handlePurchasingAddLine(e) {
     document.getElementById('purchasingProductId').value = '';
     document.getElementById('purchasingProductTrigger').textContent = 'Click to select product...';
     selectedPurchasingProduct = null;
-
-    updatePurchasingPrintHeader();
-    renderPurchasingTable();
-    showToast('Product line added to purchasing cart.', 'success');
 }
 
 /**
@@ -260,6 +390,7 @@ function handlePurchasingAddLine(e) {
 function togglePurchasingCheck(index) {
     if (purchasingManifestItems[index]) {
         purchasingManifestItems[index].checked = !purchasingManifestItems[index].checked;
+        autoSavePurchasingDraft();
         renderPurchasingTable();
     }
 }
@@ -270,6 +401,7 @@ function togglePurchasingCheck(index) {
 function updatePurchasingPrice(index, val) {
     if (purchasingManifestItems[index]) {
         purchasingManifestItems[index].price = val;
+        autoSavePurchasingDraft();
     }
 }
 
@@ -279,6 +411,7 @@ function updatePurchasingPrice(index, val) {
 function updatePurchasingRemark(index, val) {
     if (purchasingManifestItems[index]) {
         purchasingManifestItems[index].notes = val;
+        autoSavePurchasingDraft();
     }
 }
 
@@ -323,6 +456,7 @@ function handleEditPurchasingSave(e) {
     purchasingManifestItems[index].notes = document.getElementById('editPurchasingNotes').value.trim() || '';
 
     window.purchasingManifestItems = purchasingManifestItems;
+    autoSavePurchasingDraft();
     closeModal('editPurchasingModal');
     renderPurchasingTable();
     showToast('Cart item updated successfully!', 'success');
@@ -334,6 +468,7 @@ function handleEditPurchasingSave(e) {
 function removePurchasingLine(index) {
     purchasingManifestItems.splice(index, 1);
     window.purchasingManifestItems = purchasingManifestItems;
+    autoSavePurchasingDraft();
     updatePurchasingPrintHeader();
     renderPurchasingTable();
 }
@@ -411,6 +546,10 @@ document.addEventListener('click', (e) => {
 window.loadPurchasingView = loadPurchasingView;
 window.handlePurchasingAddLine = handlePurchasingAddLine;
 window.addLowStockToPurchasing = addLowStockToPurchasing;
+window.addOrMergePurchasingItem = addOrMergePurchasingItem;
+window.savePurchasingDraft = savePurchasingDraft;
+window.loadPurchasingDraft = loadPurchasingDraft;
+window.resetPurchasingManifest = resetPurchasingManifest;
 window.togglePurchasingCheck = togglePurchasingCheck;
 window.updatePurchasingPrice = updatePurchasingPrice;
 window.updatePurchasingRemark = updatePurchasingRemark;

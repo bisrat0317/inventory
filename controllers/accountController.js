@@ -225,10 +225,137 @@ async function deleteAccount(req, res, next) {
     }
 }
 
+/**
+ * Get all role menu permissions
+ */
+async function getRolePermissions(req, res, next) {
+    try {
+        const query = 'SELECT role, menu_id, is_enabled FROM role_permissions ORDER BY role ASC, menu_id ASC';
+        const result = await db.query(query);
+
+        const menus = [
+            { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Executive analytics & live facility oversight' },
+            { id: 'products', label: 'Products', icon: '📦', description: 'Product catalog, brands & units management' },
+            { id: 'stock-in', label: 'Stock In', icon: '📥', description: 'Inbound deliveries, unit conversions & intake' },
+            { id: 'stock-out', label: 'Stock Out', icon: '📤', description: 'FIFO sales dispatch, shelf stock & audit logs' },
+            { id: 'purchasing', label: 'Purchasing', icon: '🛒', description: 'Requisitions, order manifests & draft cache' },
+            { id: 'reports', label: 'Reports', icon: '📈', description: 'Profit & Loss, COGS, trends & shelf valuation' },
+            { id: 'branches', label: 'Branches', icon: '🏢', description: 'Facility locations & warehouse management' },
+            { id: 'accounts', label: 'Accounts', icon: '👥', description: 'User accounts, passwords & role permissions' }
+        ];
+
+        const permissions = {
+            admin: {},
+            manager: {},
+            staff: {}
+        };
+
+        result.rows.forEach(r => {
+            if (!permissions[r.role]) permissions[r.role] = {};
+            permissions[r.role][r.menu_id] = Boolean(r.is_enabled);
+        });
+
+        return res.json({
+            success: true,
+            roles: ['admin', 'manager', 'staff'],
+            menus,
+            permissions
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Update role menu permissions
+ */
+async function updateRolePermissions(req, res, next) {
+    const client = await db.getClient();
+    try {
+        const { role, permissions } = req.body;
+
+        if (!role || !permissions || typeof permissions !== 'object') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Valid role and permissions map are required.' 
+            });
+        }
+
+        await client.query('BEGIN');
+
+        for (const [menuId, isEnabled] of Object.entries(permissions)) {
+            await client.query(
+                `INSERT INTO role_permissions (role, menu_id, is_enabled) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT (role, menu_id) 
+                 DO UPDATE SET is_enabled = EXCLUDED.is_enabled`,
+                [role, menuId, Boolean(isEnabled)]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        return res.json({
+            success: true,
+            message: `Menu permissions for role '${role.toUpperCase()}' successfully updated.`
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        next(err);
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Admin change password for any user account
+ */
+async function adminChangePassword(req, res, next) {
+    try {
+        const userId = parseInt(req.params.id, 10);
+        const { newPassword } = req.body;
+
+        if (!userId || !newPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'User ID and new password are required.' 
+            });
+        }
+
+        if (newPassword.trim().length < 6) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Password must be at least 6 characters in length.' 
+            });
+        }
+
+        // Fetch account
+        const userRes = await db.query('SELECT id, username FROM accounts WHERE id = $1', [userId]);
+        if (userRes.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'User account not found.' });
+        }
+
+        const username = userRes.rows[0].username;
+        const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+
+        await db.query('UPDATE accounts SET password = $1 WHERE id = $2', [hashedPassword, userId]);
+
+        return res.json({
+            success: true,
+            message: `Password for account '${username}' updated successfully.`
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     getAllAccounts,
     getAccountById,
     createAccount,
     updateAccount,
-    deleteAccount
+    deleteAccount,
+    getRolePermissions,
+    updateRolePermissions,
+    adminChangePassword
 };

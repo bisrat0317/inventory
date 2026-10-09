@@ -41,10 +41,15 @@
                 <svg width="18" height="18" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             </button>
 
-            <div class="user-profile-widget">
+            <div class="user-profile-widget" onclick="openChangePasswordModal()" title="Click to Change Password" style="cursor:pointer;">
                 <span class="user-greeting">Hi, <span id="currentUserName">User</span></span>
                 <span class="role-badge" id="currentUserRole">ADMIN</span>
             </div>
+
+            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" title="Change Your Password" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                <span>🔑</span>
+                <span class="hide-on-mobile">Password</span>
+            </button>
 
             <button class="btn-logout" onclick="handleLogout()" title="Sign Out">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -62,6 +67,15 @@
                 <span>StockMatrix</span>
             </div>
             <button class="modal-close-btn" onclick="toggleMobileDrawer()">✕</button>
+        </div>
+        <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary);">
+            <div>
+                <div style="font-weight:700; font-size:14px;" id="drawerUserName">User</div>
+                <div style="font-size:12px; color:var(--text-muted);" id="drawerUserRole">ADMIN</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="toggleMobileDrawer(); openChangePasswordModal();" style="font-size:12px;">
+                🔑 Password
+            </button>
         </div>
         <nav class="drawer-nav" id="mobileNavLinks">
             <!-- Dynamically populated -->
@@ -510,6 +524,12 @@
                     <p>Compile custom line items or auto-scan low stock alerts into a consolidated, print-ready A4 manifest sheet.</p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="savePurchasingDraft(true)" title="Save purchasing cart to browser draft cache">
+                        💾 Save Draft
+                    </button>
+                    <button class="btn btn-danger-outline" onclick="resetPurchasingManifest()" title="Clear and reset purchasing cart">
+                        🗑️ Reset Cart
+                    </button>
                     <button class="btn btn-secondary" onclick="exportPurchasingToExcel()" title="Export purchasing order to Excel CSV">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Export Excel
@@ -955,6 +975,34 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Role Navigation Menu Permissions Card -->
+            <div class="card" style="margin-top:24px;">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h3 class="card-title">🛡️ Role Navigation &amp; Menu Permissions</h3>
+                        <p style="font-size:13px; color:var(--text-secondary); margin-top:2px;">
+                            Configure which system modules and navigation menus are visible and accessible for each role.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive" style="margin-top:10px;">
+                    <table id="rolePermissionsTable">
+                        <thead>
+                            <tr>
+                                <th>Menu / Module</th>
+                                <th style="text-align:center;">👑 Admin</th>
+                                <th style="text-align:center;">⚡ Manager</th>
+                                <th style="text-align:center;">📦 Staff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rolePermissionsTableBody">
+                            <!-- Populated dynamically via accounts.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -1307,6 +1355,67 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('editPurchasingModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">💾 Update Cart Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Change Password (Self-Service for all roles) -->
+    <div class="modal-backdrop" id="changePasswordModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>🔑 Change Your Password</h3>
+                <button class="modal-close-btn" onclick="closeModal('changePasswordModal')">✕</button>
+            </div>
+            <form id="changePasswordForm" onsubmit="handleChangePasswordSubmit(event)">
+                <div class="modal-body">
+                    <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:16px;">
+                        Ensure your account remains secure by choosing a strong password (at least 6 characters).
+                    </p>
+                    <div class="form-group">
+                        <label for="changePassOld">Current Password</label>
+                        <input type="password" id="changePassOld" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="changePassNew">New Password</label>
+                        <input type="password" id="changePassNew" class="form-control" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+                        <small style="color:var(--text-muted); font-size:11.5px;">Minimum 6 characters.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="changePassConfirm">Confirm New Password</label>
+                        <input type="password" id="changePassConfirm" class="form-control" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="changePassSubmitBtn">💾 Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Admin Reset / Change User Password -->
+    <div class="modal-backdrop" id="adminResetPasswordModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>🔑 Admin Reset User Password</h3>
+                <button class="modal-close-btn" onclick="closeModal('adminResetPasswordModal')">✕</button>
+            </div>
+            <form id="adminResetPasswordForm" onsubmit="handleAdminResetPasswordSubmit(event)">
+                <input type="hidden" id="adminResetPassUserId">
+                <div class="modal-body">
+                    <p style="font-size:14px; color:var(--text-primary); margin-bottom:16px;">
+                        Target Account: <strong id="adminResetPassUsernameLabel" style="color:var(--primary);">User</strong>
+                    </p>
+                    <div class="form-group">
+                        <label for="adminResetPassNew">Set New Password</label>
+                        <input type="password" id="adminResetPassNew" class="form-control" placeholder="Enter new password (min 6 characters)" minlength="6" required>
+                        <small style="color:var(--text-muted); font-size:11.5px;">As an administrator, you can directly set or reset this account's password without knowing their old password.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('adminResetPasswordModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="adminResetPassSubmitBtn">💾 Save New Password</button>
                 </div>
             </form>
         </div>

@@ -122,6 +122,21 @@ async function getSessionUser(req, res, next) {
 
         req.session.user.assignedBranches = assignedBranches;
 
+        // Fetch configured role permissions for menus
+        let allowedMenus = [];
+        try {
+            const permRes = await db.query(
+                'SELECT menu_id FROM role_permissions WHERE role = $1 AND is_enabled = true',
+                [user.role]
+            );
+            allowedMenus = permRes.rows.map(r => r.menu_id);
+        } catch (pErr) {
+            // Fallback default
+            if (user.role === 'admin') allowedMenus = ['dashboard', 'products', 'stock-in', 'stock-out', 'purchasing', 'reports', 'branches', 'accounts'];
+            else if (user.role === 'manager') allowedMenus = ['dashboard', 'products', 'stock-in', 'stock-out', 'purchasing', 'reports'];
+            else allowedMenus = ['stock-in', 'stock-out'];
+        }
+
         return res.json({
             success: true,
             user: {
@@ -131,8 +146,68 @@ async function getSessionUser(req, res, next) {
                 role: user.role,
                 created_at: user.created_at,
                 assignedBranches: assignedBranches,
-                branches: branchesList
+                branches: branchesList,
+                allowedMenus: allowedMenus
             }
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Handle password change for currently authenticated user
+ */
+async function changePassword(req, res, next) {
+    try {
+        if (!req.session || !req.session.user) {
+            return res.status(401).json({ success: false, message: 'Authentication required.' });
+        }
+
+        const userId = req.session.user.id;
+        const { oldPassword, newPassword, confirmPassword } = req.body;
+
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Current password, new password, and confirmation password are all required.' 
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'New password must be at least 6 characters in length.' 
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'New password and confirmation password do not match.' 
+            });
+        }
+
+        // Fetch current password hash
+        const userRes = await db.query('SELECT password FROM accounts WHERE id = $1', [userId]);
+        if (userRes.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'User account not found.' });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, userRes.rows[0].password);
+        if (!isMatch) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Current password is incorrect. Please verify and try again.' 
+            });
+        }
+
+        const hashedNew = await bcrypt.hash(newPassword, 10);
+        await db.query('UPDATE accounts SET password = $1 WHERE id = $2', [hashedNew, userId]);
+
+        return res.json({
+            success: true,
+            message: 'Your password has been successfully updated.'
         });
     } catch (err) {
         next(err);
@@ -142,5 +217,6 @@ async function getSessionUser(req, res, next) {
 module.exports = {
     login,
     logout,
-    getSessionUser
+    getSessionUser,
+    changePassword
 };
