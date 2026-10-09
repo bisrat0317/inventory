@@ -13,6 +13,8 @@ let autoScanInterval = null;
 let lastMatchedProduct = null;
 
 let isTorchOn = false;
+let ocrWorker = null;
+let isWorkerInitializing = false;
 
 // Initialize native BarcodeDetector if supported
 if ('BarcodeDetector' in window) {
@@ -26,6 +28,58 @@ if ('BarcodeDetector' in window) {
 }
 
 /**
+ * Initialize or get warmed up persistent Tesseract Worker
+ */
+async function getOCRWorker() {
+    if (ocrWorker) return ocrWorker;
+    if (isWorkerInitializing) {
+        while (isWorkerInitializing) {
+            await new Promise(r => setTimeout(r, 80));
+        }
+        if (ocrWorker) return ocrWorker;
+    }
+
+    isWorkerInitializing = true;
+    try {
+        if (typeof Tesseract !== 'undefined') {
+            const worker = await Tesseract.createWorker('eng', 1, {
+                logger: m => {
+                    const statusText = document.getElementById('scannerStatusText');
+                    if (m.status === 'recognizing text' && statusText) {
+                        const pct = Math.round((m.progress || 0) * 100);
+                        statusText.textContent = `⏳ ${t('scanner.scanning', 'Reading Text...')} ${pct}%`;
+                    }
+                }
+            });
+            await worker.setParameters({
+                tessedit_pageseg_mode: '6', // Assume single uniform block of text for packaging labels
+                tessjs_create_hocr: '0',
+                tessjs_create_tsv: '0',
+                tessjs_create_box: '0',
+                tessjs_create_unlv: '0',
+                tessjs_create_osd: '0'
+            });
+            ocrWorker = worker;
+            console.log('⚡ Fast Persistent Tesseract OCR Worker Ready');
+        }
+    } catch (e) {
+        console.warn('Could not initialize persistent Tesseract worker:', e);
+    } finally {
+        isWorkerInitializing = false;
+    }
+    return ocrWorker;
+}
+
+// Background pre-warm on page load
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            getOCRWorker().catch(() => {});
+        }, 1200);
+    });
+}
+
+/**
  * Open Camera Scanner Modal for specified workflow context
  * @param {string} context - 'stock-in' | 'stock-out' | 'products-filter' | 'product-form'
  */
@@ -33,6 +87,9 @@ async function openCameraScanner(context = 'stock-in') {
     scannerContext = context;
     lastMatchedProduct = null;
     isTorchOn = false;
+
+    // Trigger OCR worker pre-warm immediately if not already warm
+    getOCRWorker().catch(() => {});
 
     const modal = document.getElementById('cameraScannerModal');
     const title = document.getElementById('scannerModalTitle');
@@ -286,11 +343,55 @@ function startBarcodeScanningLoop() {
         } catch (e) {
             // Frame detection error, continue
         }
-    }, 400);
+    }, 300);
 }
 
 /**
- * Capture current frame from video and run OCR text recognition
+ * Calculate bounding box of the laser viewfinder frame relative to the video feed
+ */
+function getTargetCropCoordinates(video) {
+    const targetBox = document.querySelector('.scanner-target-box');
+    const viewport = document.querySelector('.scanner-viewport');
+    
+    if (!targetBox || !viewport || !video.videoWidth || !video.videoHeight) {
+        return {
+            x: 0,
+            y: 0,
+            width: video.videoWidth || 1280,
+            height: video.videoHeight || 720
+        };
+    }
+
+    const vpRect = viewport.getBoundingClientRect();
+    const boxRect = targetBox.getBoundingClientRect();
+
+    if (vpRect.width <= 0 || vpRect.height <= 0) {
+        return {
+            x: 0,
+            y: 0,
+            width: video.videoWidth,
+            height: video.videoHeight
+        };
+    }
+
+    const scaleX = video.videoWidth / vpRect.width;
+    const scaleY = video.videoHeight / vpRect.height;
+
+    const relX = Math.max(0, (boxRect.left - vpRect.left) * scaleX);
+    const relY = Math.max(0, (boxRect.top - vpRect.top) * scaleY);
+    const relW = Math.min(video.videoWidth - relX, boxRect.width * scaleX);
+    const relH = Math.min(video.videoHeight - relY, boxRect.height * scaleY);
+
+    return {
+        x: Math.round(relX),
+        y: Math.round(relY),
+        width: Math.max(100, Math.round(relW)),
+        height: Math.max(60, Math.round(relH))
+    };
+}
+
+/**
+ * Capture current frame from video and run high-speed OCR text recognition
  */
 async function captureAndProcessFrame() {
     if (isScanProcessing) return;
@@ -309,37 +410,52 @@ async function captureAndProcessFrame() {
     const origBtnText = captureBtn ? captureBtn.innerHTML : '';
     if (captureBtn) {
         captureBtn.disabled = true;
-        captureBtn.innerHTML = `⏳ ${t('scanner.scanning', 'Reading Text...')}`;
+        captureBtn.innerHTML = `⚡ ${t('scanner.scanning', 'Reading Text...')}`;
     }
     if (statusText) {
-        statusText.textContent = `⏳ ${t('scanner.scanning', 'Processing OCR text recognition...')}`;
+        statusText.textContent = `⚡ ${t('scanner.scanning', 'Reading packaging text...')}`;
         statusText.style.background = 'rgba(59, 130, 246, 0.9)';
     }
 
     try {
-        // Draw video frame to canvas
-        canvas.width = video.videoWidth || 1280;
-        canvas.height = video.videoHeight || 720;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // 1. Crop to laser viewfinder bounding box
+        const crop = getTargetCropCoordinates(video);
 
-        // Pre-process canvas for OCR clarity (increase contrast)
-        enhanceCanvasContrast(ctx, canvas.width, canvas.height);
+        // 2. Scale down to optimal OCR resolution (max 640px) for 10x faster execution
+        const maxDim = 640;
+        let targetW = crop.width;
+        let targetH = crop.height;
+        if (targetW > maxDim || targetH > maxDim) {
+            if (targetW >= targetH) {
+                targetH = Math.round((targetH * maxDim) / targetW);
+                targetW = maxDim;
+            } else {
+                targetW = Math.round((targetW * maxDim) / targetH);
+                targetH = maxDim;
+            }
+        }
 
-        // Run OCR recognition
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Draw cropped viewfinder region directly scaled to canvas
+        ctx.drawImage(video, crop.x, crop.y, crop.width, crop.height, 0, 0, targetW, targetH);
+
+        // 3. Fast high-contrast grayscale pre-processing
+        enhanceCanvasContrast(ctx, targetW, targetH);
+
+        // 4. Run fast OCR using pre-warmed persistent worker
         let recognizedText = '';
-        if (typeof Tesseract !== 'undefined') {
-            const result = await Tesseract.recognize(canvas, 'eng', {
-                logger: m => {
-                    if (m.status === 'recognizing text' && statusText) {
-                        const pct = Math.round((m.progress || 0) * 100);
-                        statusText.textContent = `⏳ ${t('scanner.scanning', 'Reading Text...')} ${pct}%`;
-                    }
-                }
-            });
+        const worker = await getOCRWorker();
+
+        if (worker) {
+            const result = await worker.recognize(canvas);
+            recognizedText = (result.data?.text || '').trim();
+        } else if (typeof Tesseract !== 'undefined') {
+            const result = await Tesseract.recognize(canvas, 'eng');
             recognizedText = (result.data?.text || '').trim();
         } else {
-            // Fallback lightweight regex heuristic if offline / Tesseract CDN blocked
             recognizedText = 'Scanned Product';
         }
 
@@ -347,10 +463,10 @@ async function captureAndProcessFrame() {
             handleDetectedText(recognizedText, 'ocr');
         } else {
             if (statusText) {
-                statusText.textContent = '❌ No clear text detected. Hold closer and try again.';
+                statusText.textContent = '❌ No clear text detected in frame. Hold closer.';
                 statusText.style.background = 'rgba(239, 68, 68, 0.9)';
             }
-            showToast('No clear text recognized. Try aligning the label inside the frame.', 'warning');
+            showToast('No clear text recognized. Position product packaging closer inside the frame.', 'warning');
         }
     } catch (err) {
         console.error('OCR Processing Error:', err);
@@ -380,27 +496,46 @@ async function handleScannerPhotoUpload(event) {
     if (!canvas) return;
 
     if (statusText) {
-        statusText.textContent = `⏳ ${t('scanner.scanning', 'Analyzing uploaded image...')}`;
+        statusText.textContent = `⚡ ${t('scanner.scanning', 'Analyzing uploaded image...')}`;
         statusText.style.background = 'rgba(59, 130, 246, 0.9)';
     }
 
     const img = new Image();
     img.onload = async () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        enhanceCanvasContrast(ctx, canvas.width, canvas.height);
+        const maxDim = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+            if (w >= h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+            } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+            }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, w, h);
+        enhanceCanvasContrast(ctx, w, h);
 
         try {
-            if (typeof Tesseract !== 'undefined') {
+            const worker = await getOCRWorker();
+            let text = '';
+            if (worker) {
+                const result = await worker.recognize(canvas);
+                text = (result.data?.text || '').trim();
+            } else if (typeof Tesseract !== 'undefined') {
                 const result = await Tesseract.recognize(canvas, 'eng');
-                const text = (result.data?.text || '').trim();
-                if (text) {
-                    handleDetectedText(text, 'photo-upload');
-                } else {
-                    showToast('No text found in photo. Please choose a clearer image.', 'warning');
-                }
+                text = (result.data?.text || '').trim();
+            }
+
+            if (text) {
+                handleDetectedText(text, 'photo-upload');
+            } else {
+                showToast('No clear text found in photo. Please choose a sharper image.', 'warning');
             }
         } catch (e) {
             showToast('Error reading image text: ' + e.message, 'error');
@@ -410,16 +545,15 @@ async function handleScannerPhotoUpload(event) {
 }
 
 /**
- * Enhance Canvas Image Contrast for Sharper OCR
+ * High-Speed Grayscale & Contrast Enhancer for Fast OCR
  */
 function enhanceCanvasContrast(ctx, width, height) {
     try {
         const imgData = ctx.getImageData(0, 0, width, height);
         const data = imgData.data;
-        // Simple contrast stretch
         for (let i = 0; i < data.length; i += 4) {
-            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            const enhanced = avg > 128 ? Math.min(255, avg * 1.15) : Math.max(0, avg * 0.85);
+            const gray = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+            const enhanced = gray > 120 ? Math.min(255, (gray - 128) * 1.8 + 128) : Math.max(0, (gray - 128) * 1.8 + 128);
             data[i] = enhanced;
             data[i + 1] = enhanced;
             data[i + 2] = enhanced;
