@@ -566,6 +566,17 @@ function updateStockOutAvailableDisplay() {
             qtyInput.max = String(qtyInSelectedUnit);
         }
     }
+
+    const costPaidBadge = document.getElementById('stockOutCostPaidBadge');
+    if (costPaidBadge) {
+        const unitCost = parseFloat(selectedStockOutProduct.unit_purchase_cost || 0);
+        if (unitCost > 0) {
+            costPaidBadge.style.display = 'inline-block';
+            costPaidBadge.textContent = `🏷️ ${t('stockout.cost_paid_prefix', 'Cost Paid')}: ${formatCurrency(unitCost)} / ${baseUnitName}`;
+        } else {
+            costPaidBadge.style.display = 'none';
+        }
+    }
 }
 
 async function updateStockOutConversion() {
@@ -642,7 +653,7 @@ function renderStockOutInventoryTable(items) {
     if (currentItems.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
+                <td colspan="9" class="empty-state-cell" style="text-align:center; padding:28px; color:var(--text-muted);">
                     ${t('stock.no_live_shelf', 'No live inventory on shelves in this branch facility.')}
                 </td>
             </tr>
@@ -652,6 +663,7 @@ function renderStockOutInventoryTable(items) {
 
     tbody.innerHTML = currentItems.map(item => {
         const unitSymbol = item.unit_symbol || item.unit_name || '';
+        const unitCost = parseFloat(item.unit_purchase_cost || 0);
         return `
         <tr>
             <td data-label="${t('table.id', 'ID')}" style="font-family:var(--font-mono); color:var(--text-muted);">#${item.id}</td>
@@ -660,6 +672,7 @@ function renderStockOutInventoryTable(items) {
             <td data-label="${t('table.category', 'Category')}"><span class="badge ${item.type === 1 ? 'badge-blue' : 'badge-emerald'}">${item.type === 1 ? t('cat.electronics', 'Electronics') : t('cat.construction', 'Construction')}</span></td>
             <td data-label="${t('modal.prod_unit', 'Unit')}">${escapeHtml(unitSymbol)}</td>
             <td data-label="${t('stockout.th_available_stock', 'Available Stock')}"><strong style="color:var(--success);">${formatDualStock(item.quantity, unitSymbol, item.unit_name)}</strong></td>
+            <td data-label="${t('stockout.th_cost_paid', 'Unit Cost Paid')}"><strong style="color:var(--warning); font-size:13px;">${unitCost > 0 ? formatCurrency(unitCost) : '-'}</strong></td>
             <td data-label="${t('table.color', 'Color')}">
                 ${item.color ? `<span style="width:12px; height:12px; border-radius:50%; background:${item.color}; display:inline-block; vertical-align:middle; margin-right:4px;"></span>${item.color}` : `<span style="color:var(--text-muted); font-size:12px;">${t('general.default', 'Default')}</span>`}
             </td>

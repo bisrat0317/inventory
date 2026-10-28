@@ -302,6 +302,10 @@ function printExecutiveReport() {
                 <div class="kpi-value">${formatCurrency(kpis.totalRevenue || 0)}</div>
             </div>
             <div class="kpi-card">
+                <div class="kpi-label">Cost Paid for Sold Items</div>
+                <div class="kpi-value" style="color:#d97706;">${formatCurrency(kpis.totalCogs || 0)}</div>
+            </div>
+            <div class="kpi-card">
                 <div class="kpi-label">Total Purchases Cost</div>
                 <div class="kpi-value">${formatCurrency(kpis.totalPurchaseCost || 0)}</div>
             </div>

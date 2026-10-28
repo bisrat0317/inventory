@@ -120,7 +120,14 @@ async function getExecutiveReports(req, res, next) {
         // 6. Query Stock Out records (ordered ASC for FIFO queue draining)
         const stockOutQuery = `
             SELECT so.id AS stock_out_id, so.date, so.branch_id, so.product_id, so.quantity, so.sold_price,
-                   p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name
+                   p.name AS product_name, p.brand, p.type, u.symbol, b.name AS branch_name,
+                   COALESCE(
+                       (SELECT SUM(sob.quantity_allocated * (si.purchase_price / NULLIF(si.quantity, 0)))
+                        FROM stock_out_batches sob
+                        JOIN stock_in si ON sob.stock_in_id = si.id
+                        WHERE sob.stock_out_id = so.id),
+                       0
+                   )::numeric(12, 2) AS batch_cost_paid
             FROM stock_out so
             JOIN products p ON so.product_id = p.id
             LEFT JOIN units u ON p.unit_id = u.id
@@ -249,16 +256,22 @@ async function getExecutiveReports(req, res, next) {
                 }
             }
 
-            totalCogs += calculatedCogs;
+            const recordedCostPaid = parseFloat(row.batch_cost_paid || 0);
+            const finalCostPaid = recordedCostPaid > 0 ? recordedCostPaid : calculatedCogs;
+
+            totalCogs += finalCostPaid;
             if (branchMetrics[row.branch_id]) {
-                branchMetrics[row.branch_id].cogs += calculatedCogs;
-                branchMetrics[row.branch_id].products[prodKey].total_cogs += calculatedCogs;
+                branchMetrics[row.branch_id].cogs += finalCostPaid;
+                branchMetrics[row.branch_id].products[prodKey].total_cogs += finalCostPaid;
             }
 
             // Trend chart data
             const dateStr = row.date.toISOString ? row.date.toISOString().split('T')[0] : String(row.date);
             trendData[dateStr] = (trendData[dateStr] || 0) + saleRevenue;
 
+            row.cost_paid = parseFloat(finalCostPaid.toFixed(2));
+            row.profit = parseFloat((saleRevenue - finalCostPaid).toFixed(2));
+            row.unit_cost_paid = qtySold > 0 ? parseFloat((finalCostPaid / qtySold).toFixed(2)) : 0;
             outboundRecords.push(row);
         });
 

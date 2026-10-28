@@ -445,10 +445,10 @@
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="button" class="btn btn-danger-outline" onclick="openDamagedStockModal(document.getElementById('stockOutBranchSelect')?.value)" title="Register damaged, broken or expired items">
-                        ⚠️ <span data-i18n="damaged.btn_register">Damaged Registry</span>
+                        <span data-i18n="damaged.btn_register">⚠️ Register Damaged / Lost Items</span>
                     </button>
                     <button type="button" class="btn btn-primary" onclick="openStockTransferModal(document.getElementById('stockOutBranchSelect')?.value)" title="Transfer stock inventory from one branch to another">
-                        🔄 <span data-i18n="stock.transfer_btn">Transfer to Another Branch</span>
+                        <span data-i18n="stock.transfer_btn">🔄 Transfer Stock</span>
                     </button>
                 </div>
             </div>
@@ -460,10 +460,10 @@
                         <h3 class="card-title" data-i18n="stockout.record_btn">Record Sale / Dispatch</h3>
                         <div style="display:flex; gap:6px;">
                             <button type="button" class="btn btn-sm btn-danger-outline" onclick="openDamagedStockModal(document.getElementById('stockOutBranchSelect')?.value)" title="Register damaged or broken items">
-                                ⚠️ <span data-i18n="damaged.btn_register">Damaged Registry</span>
+                                <span data-i18n="damaged.btn_register">⚠️ Damaged Registry</span>
                             </button>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="openStockTransferModal(document.getElementById('stockOutBranchSelect')?.value)" title="Transfer items to another branch">
-                                🔄 <span data-i18n="stock.transfer_btn">Transfer</span>
+                                <span data-i18n="stock.transfer_btn">🔄 Transfer Stock</span>
                             </button>
                         </div>
                     </div>
@@ -485,9 +485,10 @@
                                 </div>
                             </div>
                             <input type="hidden" id="stockOutProductId" required>
-                            <div id="stockOutAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px;">
+                            <div id="stockOutAvailableNotice" style="display:none; margin-top:8px; font-size:13px; font-weight:600; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <span style="color:var(--text-secondary);" data-i18n="table.stock">Available on Shelf:</span>
                                 <span id="stockOutAvailableBadge" class="badge badge-emerald">0 pcs</span>
+                                <span id="stockOutCostPaidBadge" class="badge badge-amber" style="display:none;">🏷️ Cost Paid: $0.00 / unit</span>
                             </div>
                         </div>
 
@@ -543,6 +544,7 @@
                                     <th data-i18n="table.category">Category</th>
                                     <th data-i18n="table.unit">Unit</th>
                                     <th data-i18n="table.stock">Available Stock</th>
+                                    <th data-i18n="stockout.th_cost_paid">Unit Cost Paid</th>
                                     <th data-i18n="table.color">Color</th>
                                     <th data-i18n="table.type">Description</th>
                                 </tr>
@@ -769,6 +771,9 @@
                             <strong style="color:var(--info);">🛒 <span data-i18n="reports.guide_purch">Total Purchases: Total money spent buying new stock from suppliers in this period.</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
+                            <strong style="color:var(--warning);">🏷️ <span data-i18n="reports.guide_cogs">Cost Paid for Sold Items: The original purchase price you paid to acquire the products that were sold.</span></strong>
+                        </div>
+                        <div style="padding:10px; background:var(--surface); border-radius:8px;">
                             <strong style="color:var(--success);">💰 <span data-i18n="reports.guide_profit">Net Profit: Actual profit earned (Sales Revenue minus Cost of Items Sold).</span></strong>
                         </div>
                         <div style="padding:10px; background:var(--surface); border-radius:8px;">
@@ -820,13 +825,17 @@
                     <div class="kpi-label" data-i18n="reports.kpi_sales">💵 Total Sales Revenue</div>
                     <div class="kpi-value" style="color:var(--primary);" id="kpiTotalRevenue">$0.00</div>
                 </div>
-                <div class="kpi-card" style="--kpi-accent:var(--info);">
-                    <div class="kpi-label" data-i18n="reports.kpi_purchases">🛒 Total Purchases</div>
-                    <div class="kpi-value" style="color:var(--info);" id="kpiTotalPurchaseCost">$0.00</div>
+                <div class="kpi-card" style="--kpi-accent:var(--warning);">
+                    <div class="kpi-label" data-i18n="reports.kpi_cost_paid">🏷️ Cost Paid for Sold Items</div>
+                    <div class="kpi-value" style="color:var(--warning);" id="kpiTotalCogs">$0.00</div>
                 </div>
                 <div class="kpi-card" id="kpiNetProfitCard" style="--kpi-accent:var(--success);">
                     <div class="kpi-label" data-i18n="reports.kpi_profit">💰 Net Profit Earned</div>
                     <div class="kpi-value" style="color:var(--success);" id="kpiNetProfit">$0.00</div>
+                </div>
+                <div class="kpi-card" style="--kpi-accent:var(--info);">
+                    <div class="kpi-label" data-i18n="reports.kpi_purchases">🛒 Total Purchases</div>
+                    <div class="kpi-value" style="color:var(--info);" id="kpiTotalPurchaseCost">$0.00</div>
                 </div>
                 <div class="kpi-card" style="--kpi-accent:var(--warning);">
                     <div class="kpi-label" data-i18n="reports.kpi_stock_value">🏬 Current Stock Value</div>
@@ -941,7 +950,9 @@
                                     <th data-i18n="table.branch">Branch</th>
                                     <th data-i18n="table.product">Product</th>
                                     <th data-i18n="stockout.qty_dispatched">Quantity Sold</th>
-                                    <th data-i18n="stockout.sold_price">Sale Amount</th>
+                                    <th data-i18n="reports.th_cost_paid">Cost Paid ($)</th>
+                                    <th data-i18n="stockout.sold_price">Sale Amount ($)</th>
+                                    <th data-i18n="reports.th_net_profit">Net Profit ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="outboundLedgerTableBody"></tbody>

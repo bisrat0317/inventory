@@ -137,6 +137,7 @@ function renderKpis(kpis) {
 
     const skuElem = document.getElementById('kpiTotalSkus');
     const revElem = document.getElementById('kpiTotalRevenue');
+    const cogsElem = document.getElementById('kpiTotalCogs');
     const costElem = document.getElementById('kpiTotalPurchaseCost');
     const valElem = document.getElementById('kpiOnHandValuation');
     const profitElem = document.getElementById('kpiNetProfit');
@@ -144,6 +145,7 @@ function renderKpis(kpis) {
 
     if (skuElem) skuElem.textContent = `${kpis.totalProductsIndexed} Products`;
     if (revElem) revElem.textContent = formatCurrency(kpis.totalRevenue);
+    if (cogsElem) cogsElem.textContent = formatCurrency(kpis.totalCogs || 0);
     if (costElem) costElem.textContent = formatCurrency(kpis.totalPurchaseCost);
     if (valElem) valElem.textContent = formatCurrency(kpis.onHandAssetValuation);
 
@@ -314,17 +316,25 @@ function renderLedgers(inbound, outbound) {
 
     if (outTbody) {
         if (!outbound || outbound.length === 0) {
-            outTbody.innerHTML = `<tr><td colspan="5" class="empty-state-cell" style="text-align:center; padding:20px; color:var(--text-muted);">${t('reports.empty_sales', 'No sales recorded in this period.')}</td></tr>`;
+            outTbody.innerHTML = `<tr><td colspan="7" class="empty-state-cell" style="text-align:center; padding:20px; color:var(--text-muted);">${t('reports.empty_sales', 'No sales recorded in this period.')}</td></tr>`;
         } else {
-            outTbody.innerHTML = outbound.map(r => `
+            outTbody.innerHTML = outbound.map(r => {
+                const costPaid = parseFloat(r.cost_paid !== undefined ? r.cost_paid : (r.cogs || 0));
+                const soldAmt = parseFloat(r.sold_price || 0);
+                const profit = r.profit !== undefined ? parseFloat(r.profit) : (soldAmt - costPaid);
+
+                return `
                 <tr>
                     <td data-label="${t('table.date', 'Date')}" style="font-size:12px; font-family:var(--font-mono); color:var(--text-muted);">${r.date ? new Date(r.date).toISOString().split('T')[0] : '-'}</td>
                     <td data-label="${t('table.branch', 'Branch')}" style="font-size:13px; font-weight:600;">🏢 ${escapeHtml(r.branch_name)}</td>
                     <td class="card-main-title" data-label="${t('table.product', 'Product')}" style="font-size:13px; font-weight:500;">${escapeHtml(r.brand)} - ${escapeHtml(r.product_name)}</td>
                     <td data-label="${t('stockout.qty_dispatched', 'Quantity Sold')}" style="font-size:13px;"><span class="badge badge-emerald">-${formatNumber(r.quantity, r.symbol)} ${escapeHtml(r.symbol || '')}</span></td>
-                    <td data-label="${t('stockout.sold_price', 'Sale Amount')}" style="font-size:13px; font-weight:600; color:var(--success);">${formatCurrency(r.sold_price)}</td>
+                    <td data-label="${t('reports.th_cost_paid', 'Cost Paid ($)')}" style="font-size:13px; font-weight:600; color:var(--warning);">${formatCurrency(costPaid)}</td>
+                    <td data-label="${t('stockout.sold_price', 'Sale Amount ($)')}" style="font-size:13px; font-weight:600; color:var(--primary);">${formatCurrency(soldAmt)}</td>
+                    <td data-label="${t('reports.th_net_profit', 'Net Profit ($)')}" style="font-size:13px; font-weight:700; color:${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatCurrency(profit)}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
     }
 }

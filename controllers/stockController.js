@@ -199,7 +199,13 @@ async function getStockOutInitData(req, res, next) {
         let prodSql = `
             SELECT p.id, p.name, p.brand, p.type, p.color, p.description, p.unit_id, p.min_stock_alert,
                    u.name AS unit_name, u.symbol AS unit_symbol,
-                   COALESCE(bi.quantity, 0)::numeric(12, 2) AS branch_quantity
+                   COALESCE(bi.quantity, 0)::numeric(12, 2) AS branch_quantity,
+                   COALESCE((
+                       SELECT (si.purchase_price / NULLIF(si.quantity, 0))::numeric(12, 2)
+                       FROM stock_in si
+                       WHERE si.product_id = p.id AND si.branch_id = $1 AND si.quantity_remaining > 0
+                       ORDER BY si.date ASC, si.id ASC LIMIT 1
+                   ), 0)::numeric(12, 2) AS unit_purchase_cost
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
             LEFT JOIN branch_inventory bi ON p.id = bi.product_id AND bi.branch_id = $1
@@ -241,7 +247,13 @@ async function getStockOutInitData(req, res, next) {
                 SELECT 
                     p.id, p.name, p.brand, p.type, p.color, p.description,
                     u.symbol AS unit_symbol,
-                    COALESCE(bi.quantity, 0)::numeric(12, 2) AS quantity
+                    COALESCE(bi.quantity, 0)::numeric(12, 2) AS quantity,
+                    COALESCE((
+                        SELECT (si.purchase_price / NULLIF(si.quantity, 0))::numeric(12, 2)
+                        FROM stock_in si
+                        WHERE si.product_id = p.id AND si.branch_id = $1 AND si.quantity_remaining > 0
+                        ORDER BY si.date ASC, si.id ASC LIMIT 1
+                    ), 0)::numeric(12, 2) AS unit_purchase_cost
                 FROM products p
                 INNER JOIN branch_inventory bi ON p.id = bi.product_id
                 LEFT JOIN units u ON p.unit_id = u.id
