@@ -177,10 +177,19 @@ const translations = {
         'purchasing.color_spec': 'Color / Spec',
         'purchasing.notes': 'Logistics / Supplier Notes',
         'purchasing.manifest_title': 'Active Purchasing Cart & Requisition Sheet',
+        'purchasing.target_shop': 'Target Destination Shop / Branch',
+        'purchasing.qty_unit': 'Measurement Unit',
+        'purchasing.direct_stockin': 'Send to Stock In',
+        'purchasing.direct_stockin_title': 'Direct Stock In from Purchase Order',
         'purchasing.save_draft_btn': '💾 Save Draft',
         'purchasing.reset_cart_btn': '🗑️ Reset Cart',
         'purchasing.print_btn': '🖨️ Print / PDF Order Sheet',
         'purchasing.empty_cart': 'Your purchasing cart is empty. Add low-stock items from the scanner or select products manually.',
+
+        // Stock Transfer
+        'stock.transfer_btn': '🔄 Transfer Stock',
+        'stock.transfer_title': 'Transfer Stock Between Branches',
+        'stock.transfer_subtitle': 'Move available stock from one branch to another with real-time FIFO allocation',
 
         // Damaged Goods
         'damaged.btn_register': '⚠️ Register Damaged / Lost Items',
@@ -542,10 +551,19 @@ const translations = {
         'purchasing.color_spec': 'ቀለም / ሞዴል / ዝርዝር መረጃ (አማራጭ)',
         'purchasing.notes': 'ለአቅራቢው የሚሰጥ ማስታወሻ (አማራጭ)',
         'purchasing.manifest_title': '📋 የተጠቃለለ የግዢ ማዘዣ ዝርዝር',
+        'purchasing.target_shop': 'ዒላማ ቅርንጫፍ / ሱቅ',
+        'purchasing.qty_unit': 'የመለኪያ አሃድ',
+        'purchasing.direct_stockin': 'ወደ ገቢ መጋዘን ላክ',
+        'purchasing.direct_stockin_title': 'ከተገዛው በቀጥታ ወደ መጋዘን አስገባ',
         'purchasing.save_draft_btn': '💾 ረቂቅ አስቀምጥ',
         'purchasing.reset_cart_btn': '🗑️ ሁሉንም አፅዳ',
         'purchasing.print_btn': '🖨️ የግዢ ማዘዣውን አትም',
         'purchasing.empty_cart': 'የግዢ ቅርጫትዎ ባዶ ነው። ከላይ ካለው አነስተኛ ክምችት ፈላጊ ወይም በቀጥታ በመምረጥ እቃ ይጨምሩ።',
+
+        // Stock Transfer
+        'stock.transfer_btn': '🔄 እቃ ማስተላለፊያ',
+        'stock.transfer_title': 'እቃዎችን በቅርንጫፎች መካከል ማስተላለፍ',
+        'stock.transfer_subtitle': 'ክምችት ከአንድ ቅርንጫፍ ወደ ሌላ ቅርንጫፍ በቀጥታ ማስተላለፊያ',
 
         // Damaged Goods
         'damaged.btn_register': '⚠️ የተበላሸ / የጠፋ ዕቃ መዝግብ',

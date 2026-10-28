@@ -663,6 +663,230 @@ async function deleteDamagedStock(req, res, next) {
     }
 }
 
+/**
+ * Handle Inter-Branch Stock Transfer
+ */
+async function transferStock(req, res, next) {
+    const client = await db.getClient();
+    try {
+        const user = req.session.user;
+        const branchInfo = await getUserAssignedBranches(user);
+
+        const {
+            from_branch_id,
+            to_branch_id,
+            product_id,
+            unit_id,
+            quantity,
+            conversion_factor,
+            notes,
+            date
+        } = req.body;
+
+        const fromBranchId = parseInt(from_branch_id, 10);
+        const toBranchId = parseInt(to_branch_id, 10);
+        const targetProductId = parseInt(product_id, 10);
+        const targetUnitId = parseInt(unit_id, 10) || null;
+        const inputQuantity = parseFloat(quantity);
+        const transferNotes = (notes || '').trim();
+        const entryDate = date || new Date().toISOString().split('T')[0];
+        let factor = parseFloat(conversion_factor) || 1.0;
+        if (factor <= 0) factor = 1.0;
+
+        if (!fromBranchId || !toBranchId || !targetProductId || isNaN(inputQuantity) || inputQuantity <= 0) {
+            return res.status(400).json({ success: false, message: 'Please provide valid source branch, destination branch, product, and positive transfer quantity.' });
+        }
+
+        if (fromBranchId === toBranchId) {
+            return res.status(400).json({ success: false, message: 'Source and destination branches must be different.' });
+        }
+
+        // Security authorization check: User must be permitted to dispatch from source branch
+        if (!branchInfo.isAdmin && !branchInfo.branchIds.includes(fromBranchId)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized: You are not assigned to the source branch facility.' });
+        }
+
+        const quantityInBase = inputQuantity * factor;
+
+        // Check source branch available stock
+        const invCheck = await client.query(
+            'SELECT COALESCE(quantity, 0) AS available FROM branch_inventory WHERE branch_id = $1 AND product_id = $2',
+            [fromBranchId, targetProductId]
+        );
+        const availableStock = parseFloat(invCheck.rows[0]?.available || 0);
+
+        if (quantityInBase > availableStock) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot transfer: Insufficient inventory at source facility! Available on shelf: ${availableStock.toFixed(2)}, Attempted transfer: ${quantityInBase.toFixed(2)}.`
+            });
+        }
+
+        // Get unit symbol
+        let unitSymbol = 'pcs';
+        if (targetUnitId) {
+            const uRes = await client.query('SELECT symbol FROM units WHERE id = $1', [targetUnitId]);
+            if (uRes.rowCount > 0) unitSymbol = uRes.rows[0].symbol;
+        }
+
+        await client.query('BEGIN');
+
+        // 1. Drain FIFO batches from source branch stock_in
+        let quantityToAllocate = quantityInBase;
+        let totalCostTransferred = 0;
+        const batchesRes = await client.query(`
+            SELECT id, quantity, purchase_price, quantity_remaining 
+            FROM stock_in 
+            WHERE branch_id = $1 AND product_id = $2 AND quantity_remaining > 0 
+            ORDER BY date ASC, id ASC
+        `, [fromBranchId, targetProductId]);
+
+        for (const batch of batchesRes.rows) {
+            if (quantityToAllocate <= 0) break;
+
+            const batchId = batch.id;
+            const batchRemaining = parseFloat(batch.quantity_remaining);
+            const batchOrigQty = parseFloat(batch.quantity) || 1;
+            const batchCostPerUnit = parseFloat(batch.purchase_price) / batchOrigQty;
+
+            let allocated = 0;
+            let newRemaining = 0;
+
+            if (batchRemaining >= quantityToAllocate) {
+                newRemaining = batchRemaining - quantityToAllocate;
+                allocated = quantityToAllocate;
+                quantityToAllocate = 0;
+            } else {
+                newRemaining = 0;
+                allocated = batchRemaining;
+                quantityToAllocate -= batchRemaining;
+            }
+
+            totalCostTransferred += (allocated * batchCostPerUnit);
+
+            await client.query('UPDATE stock_in SET quantity_remaining = $1 WHERE id = $2', [newRemaining, batchId]);
+        }
+
+        // 2. Decrement source branch_inventory
+        await client.query(
+            'UPDATE branch_inventory SET quantity = quantity - $1 WHERE branch_id = $2 AND product_id = $3',
+            [quantityInBase, fromBranchId, targetProductId]
+        );
+
+        // 3. Increment destination branch_inventory
+        await client.query(`
+            INSERT INTO branch_inventory (branch_id, product_id, quantity)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (branch_id, product_id)
+            DO UPDATE SET quantity = branch_inventory.quantity + EXCLUDED.quantity
+        `, [toBranchId, targetProductId, quantityInBase]);
+
+        // 4. Create incoming stock_in batch at destination branch
+        await client.query(`
+            INSERT INTO stock_in (
+                branch_id, product_id, quantity, purchase_price, date,
+                unit_type, conversion_factor, bulk_quantity, quantity_remaining
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+            toBranchId,
+            targetProductId,
+            quantityInBase,
+            parseFloat(totalCostTransferred.toFixed(2)) || 0,
+            entryDate,
+            unitSymbol,
+            factor,
+            inputQuantity,
+            quantityInBase
+        ]);
+
+        // 5. Record log in stock_transfers
+        const transferRes = await client.query(`
+            INSERT INTO stock_transfers (
+                from_branch_id, to_branch_id, product_id, quantity, unit_id,
+                conversion_factor, input_quantity, notes, date, transferred_by
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id
+        `, [
+            fromBranchId,
+            toBranchId,
+            targetProductId,
+            quantityInBase,
+            targetUnitId,
+            factor,
+            inputQuantity,
+            transferNotes,
+            entryDate,
+            user.username || 'staff'
+        ]);
+
+        await client.query('COMMIT');
+
+        // Fetch branch names for user feedback
+        const branchNames = await client.query('SELECT id, name FROM branches WHERE id IN ($1, $2)', [fromBranchId, toBranchId]);
+        const fromName = branchNames.rows.find(b => b.id === fromBranchId)?.name || 'Source Facility';
+        const toName = branchNames.rows.find(b => b.id === toBranchId)?.name || 'Destination Facility';
+
+        return res.status(201).json({
+            success: true,
+            message: `Successfully transferred ${inputQuantity} ${unitSymbol} from "${fromName}" to "${toName}"! Shelf balances and FIFO batches updated.`,
+            transferId: transferRes.rows[0].id
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        next(err);
+    } finally {
+        client.release();
+    }
+}
+
+/**
+ * Get Stock Transfers History
+ */
+async function getTransfers(req, res, next) {
+    try {
+        const { branch_id, start_date, end_date } = req.query;
+        let where = "1=1";
+        const params = [];
+        let pIdx = 1;
+
+        if (branch_id && branch_id !== 'all') {
+            where += ` AND (st.from_branch_id = $${pIdx} OR st.to_branch_id = $${pIdx})`;
+            params.push(parseInt(branch_id, 10));
+            pIdx++;
+        }
+
+        if (start_date) {
+            if (end_date) {
+                where += ` AND st.date BETWEEN $${pIdx++} AND $${pIdx++}`;
+                params.push(start_date, end_date);
+            } else {
+                where += ` AND st.date = $${pIdx++}`;
+                params.push(start_date);
+            }
+        }
+
+        const query = `
+            SELECT st.*, 
+                   fb.name AS from_branch_name,
+                   tb.name AS to_branch_name,
+                   p.name AS product_name, p.brand,
+                   u.symbol AS unit_symbol, u.name AS unit_name
+            FROM stock_transfers st
+            JOIN branches fb ON st.from_branch_id = fb.id
+            JOIN branches tb ON st.to_branch_id = tb.id
+            JOIN products p ON st.product_id = p.id
+            LEFT JOIN units u ON st.unit_id = u.id
+            WHERE ${where}
+            ORDER BY st.date DESC, st.id DESC
+            LIMIT 100
+        `;
+        const result = await db.query(query, params);
+        return res.json({ success: true, transfers: result.rows });
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     getStockInInitData,
     stockIn,
@@ -671,5 +895,7 @@ module.exports = {
     getProductConversions,
     recordDamagedStock,
     getDamagedStock,
-    deleteDamagedStock
+    deleteDamagedStock,
+    transferStock,
+    getTransfers
 };

@@ -21,4 +21,8 @@ router.post('/damaged', requireRole('admin', 'manager', 'staff'), stockControlle
 router.get('/damaged', requireRole('admin', 'manager', 'staff'), stockController.getDamagedStock);
 router.delete('/damaged/:id', requireRole('admin', 'manager'), stockController.deleteDamagedStock);
 
+// Stock Transfer routes (admin, manager, staff)
+router.post('/transfer', requireRole('admin', 'manager', 'staff'), stockController.transferStock);
+router.get('/transfer', requireRole('admin', 'manager', 'staff'), stockController.getTransfers);
+
 module.exports = router;

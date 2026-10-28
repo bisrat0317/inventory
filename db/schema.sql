@@ -135,6 +135,22 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     PRIMARY KEY (role, menu_id)
 );
 
+-- 13. Stock Transfers (Inter-Branch Inventory Rebalancing)
+CREATE TABLE IF NOT EXISTS stock_transfers (
+    id SERIAL PRIMARY KEY,
+    from_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+    to_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+    product_id INT NOT NULL REFERENCES products (id) ON DELETE CASCADE,
+    quantity NUMERIC(12, 4) NOT NULL,
+    unit_id INT REFERENCES units (id) ON DELETE SET NULL,
+    conversion_factor NUMERIC(12, 4) DEFAULT 1.0,
+    input_quantity NUMERIC(12, 4),
+    notes TEXT,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    transferred_by VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for high performance queries
 CREATE INDEX IF NOT EXISTS idx_products_is_deleted ON products (is_deleted);
 
@@ -153,5 +169,9 @@ CREATE INDEX IF NOT EXISTS idx_stock_in_remaining ON stock_in (
 CREATE INDEX IF NOT EXISTS idx_stock_out_branch_date ON stock_out (branch_id, date);
 
 CREATE INDEX IF NOT EXISTS idx_damaged_stock_branch_date ON damaged_stock (branch_id, date);
+
+CREATE INDEX IF NOT EXISTS idx_stock_transfers_from_date ON stock_transfers (from_branch_id, date);
+
+CREATE INDEX IF NOT EXISTS idx_stock_transfers_to_date ON stock_transfers (to_branch_id, date);
 
 CREATE INDEX IF NOT EXISTS idx_branch_inventory_qty ON branch_inventory (quantity);

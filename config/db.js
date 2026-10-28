@@ -64,7 +64,25 @@ async function initEmbeddedPg() {
         } else {
             // Ensure schema migrations are applied
             try {
-                await pgliteInstance.exec('ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;');
+                await pgliteInstance.exec(`
+                    ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;
+                    CREATE TABLE IF NOT EXISTS stock_transfers (
+                        id SERIAL PRIMARY KEY,
+                        from_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+                        to_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+                        product_id INT NOT NULL REFERENCES products (id) ON DELETE CASCADE,
+                        quantity NUMERIC(12, 4) NOT NULL,
+                        unit_id INT REFERENCES units (id) ON DELETE SET NULL,
+                        conversion_factor NUMERIC(12, 4) DEFAULT 1.0,
+                        input_quantity NUMERIC(12, 4),
+                        notes TEXT,
+                        date DATE NOT NULL DEFAULT CURRENT_DATE,
+                        transferred_by VARCHAR(100),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_stock_transfers_from_date ON stock_transfers (from_branch_id, date);
+                    CREATE INDEX IF NOT EXISTS idx_stock_transfers_to_date ON stock_transfers (to_branch_id, date);
+                `);
             } catch (migErr) {}
         }
 
@@ -223,7 +241,25 @@ async function testConnectionAndAutoSetup() {
         } else {
             // Apply migration if branch type column doesn't exist
             try {
-                await pool.query('ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;');
+                await pool.query(`
+                    ALTER TABLE branches ADD COLUMN IF NOT EXISTS type INT NOT NULL DEFAULT 1;
+                    CREATE TABLE IF NOT EXISTS stock_transfers (
+                        id SERIAL PRIMARY KEY,
+                        from_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+                        to_branch_id INT NOT NULL REFERENCES branches (id) ON DELETE CASCADE,
+                        product_id INT NOT NULL REFERENCES products (id) ON DELETE CASCADE,
+                        quantity NUMERIC(12, 4) NOT NULL,
+                        unit_id INT REFERENCES units (id) ON DELETE SET NULL,
+                        conversion_factor NUMERIC(12, 4) DEFAULT 1.0,
+                        input_quantity NUMERIC(12, 4),
+                        notes TEXT,
+                        date DATE NOT NULL DEFAULT CURRENT_DATE,
+                        transferred_by VARCHAR(100),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_stock_transfers_from_date ON stock_transfers (from_branch_id, date);
+                    CREATE INDEX IF NOT EXISTS idx_stock_transfers_to_date ON stock_transfers (to_branch_id, date);
+                `);
             } catch (e) {}
         }
 

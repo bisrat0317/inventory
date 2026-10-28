@@ -5,6 +5,8 @@
 let purchasingManifestItems = [];
 let purchasingProductsCache = [];
 let purchasingBranchesCache = [];
+let cachedLowStockAlerts = [];
+let activePurchasingFilteredProducts = null;
 let selectedPurchasingProduct = null;
 
 const PURCHASING_DRAFT_KEY = 'stockmatrix_purchasing_manifest_draft';
@@ -24,7 +26,7 @@ async function loadPurchasingView() {
 
         updatePurchasingPrintHeader();
 
-        // Fetch products and branches
+        // Fetch products and reports concurrently
         const [prodRes, repRes] = await Promise.all([
             fetch('/api/products'),
             fetch('/api/reports')
@@ -35,14 +37,20 @@ async function loadPurchasingView() {
 
         if (prodData.success) {
             purchasingProductsCache = prodData.products || [];
-            renderPurchasingProductOptions(purchasingProductsCache);
+            if (prodData.units && Array.isArray(prodData.units)) {
+                AppState.units = prodData.units;
+            }
+            populatePurchasingUnitsDatalist();
         }
 
         if (repData.success) {
             purchasingBranchesCache = repData.branches || [];
+            cachedLowStockAlerts = repData.lowStockAlerts || [];
             populatePurchasingBranches(purchasingBranchesCache);
-            renderPurchasingLowStockScanner(repData.lowStockAlerts || []);
         }
+
+        // Apply active branch filter or display full catalog
+        handlePurchasingBranchChange();
 
         renderPurchasingTable();
     } catch (err) {
@@ -70,15 +78,156 @@ function updatePurchasingPrintHeader() {
 }
 
 /**
- * Populate destination branch multi-select
+ * Populate destination branch selector and modals
  */
 function populatePurchasingBranches(branches) {
-    const multiSelect = document.getElementById('purchasingBranchMultiSelect');
-    if (!multiSelect) return;
+    const branchSelect = document.getElementById('purchasingBranchSelect');
+    if (branchSelect) {
+        const currentVal = branchSelect.value;
+        let html = '<option value="">-- All Shops / General Catalog --</option>';
+        html += branches.map(b => {
+            const typeLabel = b.type === 2 ? ' (Construction Supply)' : (b.type === 1 ? ' (Mobile Repair & Electronics)' : '');
+            return `<option value="${b.id}">${escapeHtml(b.name)}${typeLabel}</option>`;
+        }).join('');
+        branchSelect.innerHTML = html;
+        if (currentVal && Array.from(branchSelect.options).some(o => o.value == currentVal)) {
+            branchSelect.value = currentVal;
+        }
+    }
 
-    multiSelect.innerHTML = branches.map(b => 
-        `<option value="${b.id}">${escapeHtml(b.name)}</option>`
+    // Direct Stock In modal branch selector
+    const directBranchSelect = document.getElementById('directStockInBranchSelect');
+    if (directBranchSelect) {
+        directBranchSelect.innerHTML = branches.map(b => {
+            const typeLabel = b.type === 2 ? ' (Construction)' : (b.type === 1 ? ' (Electronics)' : '');
+            return `<option value="${b.id}">${escapeHtml(b.name)}${typeLabel}</option>`;
+        }).join('');
+    }
+
+    // Legacy multi-select if present
+    const multiSelect = document.getElementById('purchasingBranchMultiSelect');
+    if (multiSelect) {
+        multiSelect.innerHTML = branches.map(b => 
+            `<option value="${b.id}">${escapeHtml(b.name)}</option>`
+        ).join('');
+    }
+}
+
+/**
+ * Populate Datalist with available measurement units
+ */
+function populatePurchasingUnitsDatalist() {
+    const datalist = document.getElementById('purchasingUnitDatalist');
+    if (!datalist) return;
+
+    const unitSet = new Set(['pcs', 'piece', 'kg', 'meter', 'box', 'bag', 'sck', 'roll', 'liter', 'set', 'carton', 'qtl']);
+
+    if (AppState.units && Array.isArray(AppState.units)) {
+        AppState.units.forEach(u => {
+            if (u.symbol) unitSet.add(u.symbol);
+            if (u.name) unitSet.add(u.name);
+        });
+    }
+
+    purchasingProductsCache.forEach(p => {
+        if (p.unit_symbol) unitSet.add(p.unit_symbol);
+        if (p.unit_name) unitSet.add(p.unit_name);
+    });
+
+    datalist.innerHTML = Array.from(unitSet).map(u => 
+        `<option value="${escapeHtml(u)}"></option>`
     ).join('');
+}
+
+/**
+ * Handle Shop / Branch selection and dynamically filter products by category:
+ * If Construction branch (type=2) -> Show Construction materials only.
+ * If Electronics branch (type=1) -> Show Electronics only.
+ */
+function handlePurchasingBranchChange() {
+    const branchSelect = document.getElementById('purchasingBranchSelect');
+    const badge = document.getElementById('purchasingBranchFilterBadge');
+    const countBadge = document.getElementById('purchasingProductCountBadge');
+    const selectedBranchId = branchSelect ? branchSelect.value : '';
+
+    let filtered = purchasingProductsCache;
+    let selectedBranch = null;
+
+    if (selectedBranchId) {
+        selectedBranch = purchasingBranchesCache.find(b => b.id == selectedBranchId);
+    }
+
+    if (selectedBranch) {
+        const branchType = parseInt(selectedBranch.type, 10);
+        if (branchType === 2) {
+            // Construction Supply: Filter products of type 2 (Construction) or 0 (General)
+            filtered = purchasingProductsCache.filter(p => p.type === 2 || p.type === 0);
+            if (badge) {
+                badge.style.display = 'inline-block';
+                badge.className = 'badge badge-emerald';
+                badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                badge.style.color = '#10B981';
+                badge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+                badge.innerHTML = `🏗️ Filtered: Construction Materials Only (${filtered.length} products for ${escapeHtml(selectedBranch.name)})`;
+            }
+            if (countBadge) {
+                countBadge.className = 'badge badge-emerald';
+                countBadge.textContent = `${filtered.length} Construction Products`;
+            }
+        } else if (branchType === 1) {
+            // Mobile Repair & Electronics: Filter products of type 1 (Electronics) or 0 (General)
+            filtered = purchasingProductsCache.filter(p => p.type === 1 || p.type === 0);
+            if (badge) {
+                badge.style.display = 'inline-block';
+                badge.className = 'badge badge-blue';
+                badge.style.background = 'rgba(59, 130, 246, 0.15)';
+                badge.style.color = '#3B82F6';
+                badge.style.border = '1px solid rgba(59, 130, 246, 0.35)';
+                badge.innerHTML = `📱 Filtered: Electronics & Parts Only (${filtered.length} products for ${escapeHtml(selectedBranch.name)})`;
+            }
+            if (countBadge) {
+                countBadge.className = 'badge badge-blue';
+                countBadge.textContent = `${filtered.length} Electronics Products`;
+            }
+        } else {
+            if (badge) badge.style.display = 'none';
+            if (countBadge) {
+                countBadge.className = 'badge badge-slate';
+                countBadge.textContent = `${filtered.length} Products`;
+            }
+        }
+    } else {
+        if (badge) badge.style.display = 'none';
+        if (countBadge) {
+            countBadge.className = 'badge badge-slate';
+            countBadge.textContent = `All Products (${purchasingProductsCache.length})`;
+        }
+    }
+
+    // Reset selected product if it does not match the active branch filter
+    if (selectedPurchasingProduct && !filtered.some(p => p.id === selectedPurchasingProduct.id)) {
+        selectedPurchasingProduct = null;
+        const idInput = document.getElementById('purchasingProductId');
+        if (idInput) idInput.value = '';
+        const trigger = document.getElementById('purchasingProductTrigger');
+        if (trigger) trigger.textContent = 'Click to select product...';
+        const unitInput = document.getElementById('purchasingUnitInput');
+        if (unitInput) unitInput.value = '';
+    }
+
+    activePurchasingFilteredProducts = filtered;
+    renderPurchasingProductOptions(filtered);
+
+    // Filter low stock scanner list
+    if (selectedBranch && cachedLowStockAlerts.length > 0) {
+        const branchAlerts = cachedLowStockAlerts.filter(a => 
+            a.branch_id == selectedBranch.id || 
+            (a.branch_name && a.branch_name.toLowerCase() === selectedBranch.name.toLowerCase())
+        );
+        renderPurchasingLowStockScanner(branchAlerts);
+    } else {
+        renderPurchasingLowStockScanner(cachedLowStockAlerts);
+    }
 }
 
 /**
@@ -89,7 +238,7 @@ function renderPurchasingProductOptions(products) {
     if (!list) return;
 
     if (products.length === 0) {
-        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products</div>';
+        list.innerHTML = '<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No matching products in this category</div>';
         return;
     }
 
@@ -97,8 +246,8 @@ function renderPurchasingProductOptions(products) {
         <div class="search-select-option" onclick="selectPurchasingProduct(${p.id})">
             <div>
                 <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
-                <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:6px;">
-                    ${p.type === 1 ? 'Electronics Matrix' : 'Construction'}
+                <span class="badge ${p.type === 2 ? 'badge-emerald' : 'badge-blue'}" style="font-size:10px; margin-left:6px;">
+                    ${p.type === 2 ? '🏗️ Construction' : '📱 Electronics'}
                 </span>
             </div>
             <div style="font-size:11.5px; color:var(--text-muted);">Base Unit: ${escapeHtml(p.unit_symbol || p.unit_name || 'N/A')}</div>
@@ -106,16 +255,27 @@ function renderPurchasingProductOptions(products) {
     `).join('');
 }
 
+/**
+ * Filter products in search box respecting branch filter
+ */
 function filterPurchasingProducts(query) {
-    const q = query.toLowerCase().trim();
-    const filtered = purchasingProductsCache.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.brand.toLowerCase().includes(q) ||
+    const baseList = activePurchasingFilteredProducts || purchasingProductsCache;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+        renderPurchasingProductOptions(baseList);
+        return;
+    }
+    const filtered = baseList.filter(p => 
+        (p.name && p.name.toLowerCase().includes(q)) || 
+        (p.brand && p.brand.toLowerCase().includes(q)) ||
         (p.description && p.description.toLowerCase().includes(q))
     );
     renderPurchasingProductOptions(filtered);
 }
 
+/**
+ * Select a product from the custom search select
+ */
 function selectPurchasingProduct(productId) {
     const product = purchasingProductsCache.find(p => p.id === productId);
     if (!product) return;
@@ -123,6 +283,12 @@ function selectPurchasingProduct(productId) {
     selectedPurchasingProduct = product;
     document.getElementById('purchasingProductId').value = product.id;
     document.getElementById('purchasingProductTrigger').textContent = `${product.brand} - ${product.name}`;
+
+    // Auto-fill measurement unit input
+    const unitInput = document.getElementById('purchasingUnitInput');
+    if (unitInput) {
+        unitInput.value = product.unit_symbol || product.unit_name || 'pcs';
+    }
 
     const qtyInput = document.getElementById('purchasingQty');
     if (qtyInput) {
@@ -134,7 +300,7 @@ function selectPurchasingProduct(productId) {
             qtyInput.placeholder = 'e.g. 10 (Whole count)';
         } else {
             qtyInput.step = 'any';
-            qtyInput.min = '0.01';
+            qtyInput.min = '0.001';
             qtyInput.placeholder = '0';
         }
     }
@@ -154,7 +320,7 @@ function renderPurchasingLowStockScanner(alerts) {
     const container = document.getElementById('purchasingLowStockList');
     if (!container) return;
 
-    if (alerts.length === 0) {
+    if (!alerts || alerts.length === 0) {
         container.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">${t('dash.empty_low_stock', '✅ All facility branch inventories are within safe operating capacity.')}</div>`;
         return;
     }
@@ -185,13 +351,13 @@ function renderPurchasingLowStockScanner(alerts) {
 
 /**
  * Helper to add or merge product item into purchasingManifestItems
- * Merges items with same brand, name, and color/spec into a single row, combining quantities and destinations.
  */
 function addOrMergePurchasingItem(itemData) {
     const brand = (itemData.brand || '').trim();
     const name = (itemData.name || '').trim();
     const color = (itemData.color || 'Standard').trim();
     const newQty = parseFloat(itemData.qty) || 0;
+    const unit = (itemData.unit || 'pcs').trim();
     const newDestinations = (itemData.destinations || '')
         .split(',')
         .map(d => d.trim())
@@ -200,7 +366,8 @@ function addOrMergePurchasingItem(itemData) {
     const existingIndex = purchasingManifestItems.findIndex(item => 
         (item.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
         (item.name || '').trim().toLowerCase() === name.toLowerCase() &&
-        (item.color || 'Standard').trim().toLowerCase() === color.toLowerCase()
+        (item.color || 'Standard').trim().toLowerCase() === color.toLowerCase() &&
+        (item.unit || '').trim().toLowerCase() === unit.toLowerCase()
     );
 
     if (existingIndex >= 0) {
@@ -216,6 +383,10 @@ function addOrMergePurchasingItem(itemData) {
 
         const combinedDests = Array.from(new Set([...currentDests, ...newDestinations]));
         existing.destinations = combinedDests.join(', ') || 'All Branches';
+
+        // Keep productId and targetBranchId
+        if (!existing.productId && itemData.productId) existing.productId = itemData.productId;
+        if (!existing.targetBranchId && itemData.targetBranchId) existing.targetBranchId = itemData.targetBranchId;
 
         // Merge notes if distinct
         if (itemData.notes && itemData.notes.trim()) {
@@ -234,13 +405,15 @@ function addOrMergePurchasingItem(itemData) {
         updatePurchasingPrintHeader();
         renderPurchasingTable();
 
-        showToast(`Merged into 1 row: "${brand} - ${name}" quantity updated to ${formatNumber(existing.qty, existing.unit)} ${existing.unit || ''} (Branches: ${existing.destinations}).`, 'success');
+        showToast(`Merged into 1 row: "${brand} - ${name}" quantity updated to ${formatNumber(existing.qty, existing.unit)} ${existing.unit} (Branches: ${existing.destinations}).`, 'success');
         return;
     }
 
     // Add new line item
     purchasingManifestItems.push({
         checked: false,
+        productId: itemData.productId || (selectedPurchasingProduct ? selectedPurchasingProduct.id : null),
+        targetBranchId: itemData.targetBranchId || null,
         brand: brand,
         name: name,
         color: color,
@@ -248,13 +421,13 @@ function addOrMergePurchasingItem(itemData) {
         qty: newQty,
         price: itemData.price || '',
         notes: itemData.notes || '',
-        unit: itemData.unit || ''
+        unit: unit
     });
 
     autoSavePurchasingDraft();
     updatePurchasingPrintHeader();
     renderPurchasingTable();
-    showToast(`Added "${brand} - ${name}" (${formatNumber(newQty, itemData.unit)} ${itemData.unit || ''}) to purchasing cart.`, 'success');
+    showToast(`Added "${brand} - ${name}" (${formatNumber(newQty, unit)} ${unit}) to purchasing cart.`, 'success');
 }
 
 /**
@@ -328,7 +501,17 @@ function addLowStockToPurchasing(brand, name, branchName, minThreshold, currentS
     const sym = unitSymbol || 'units';
     const suggestedQty = threshold > 0 ? threshold : 5;
 
+    const prod = purchasingProductsCache.find(p => 
+        p.name.toLowerCase().trim() === (name || '').toLowerCase().trim() && 
+        p.brand.toLowerCase().trim() === (brand || '').toLowerCase().trim()
+    );
+    const br = purchasingBranchesCache.find(b => 
+        b.name.toLowerCase().trim() === (branchName || '').toLowerCase().trim()
+    );
+
     addOrMergePurchasingItem({
+        productId: prod ? prod.id : null,
+        targetBranchId: br ? br.id : null,
         brand: brand,
         name: name,
         color: 'Standard',
@@ -351,33 +534,46 @@ function handlePurchasingAddLine(e) {
         return;
     }
 
-    const branchMulti = document.getElementById('purchasingBranchMultiSelect');
-    const selectedBranches = Array.from(branchMulti.selectedOptions).map(o => o.text);
+    const branchSelect = document.getElementById('purchasingBranchSelect');
+    let destinationText = 'All Branches';
+    let targetBranchId = null;
 
-    if (selectedBranches.length === 0) {
-        showToast('Please choose at least one target branch.', 'error');
-        return;
+    if (branchSelect && branchSelect.value) {
+        targetBranchId = parseInt(branchSelect.value, 10);
+        const b = purchasingBranchesCache.find(x => x.id === targetBranchId);
+        if (b) destinationText = b.name;
     }
 
     const qty = parseFloat(document.getElementById('purchasingQty').value);
+    if (isNaN(qty) || qty <= 0) {
+        showToast('Please enter a valid positive order quantity.', 'error');
+        return;
+    }
+
+    const unitInput = document.getElementById('purchasingUnitInput');
+    const unit = (unitInput && unitInput.value.trim()) || selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || 'pcs';
     const color = document.getElementById('purchasingColor').value.trim() || 'Standard';
+    const price = document.getElementById('purchasingPrice') ? document.getElementById('purchasingPrice').value.trim() : '';
     const notes = document.getElementById('purchasingNotes').value.trim() || '';
-    const unit = selectedPurchasingProduct.unit_symbol || selectedPurchasingProduct.unit_name || '';
 
     addOrMergePurchasingItem({
+        productId: selectedPurchasingProduct.id,
+        targetBranchId: targetBranchId,
         brand: selectedPurchasingProduct.brand,
         name: selectedPurchasingProduct.name,
         color: color,
-        destinations: selectedBranches.join(', '),
+        destinations: destinationText,
         qty: qty,
-        price: '',
+        price: price,
         notes: notes,
         unit: unit
     });
 
     // Reset form inputs
     document.getElementById('purchasingQty').value = '';
+    if (unitInput) unitInput.value = '';
     document.getElementById('purchasingColor').value = '';
+    if (document.getElementById('purchasingPrice')) document.getElementById('purchasingPrice').value = '';
     document.getElementById('purchasingNotes').value = '';
     document.getElementById('purchasingProductId').value = '';
     document.getElementById('purchasingProductTrigger').textContent = 'Click to select product...';
@@ -425,7 +621,12 @@ function openEditPurchasingLine(index) {
     document.getElementById('editPurchasingIndex').value = index;
     document.getElementById('editPurchasingProdTitle').textContent = `${item.brand} - ${item.name}`;
     document.getElementById('editPurchasingQty').value = item.qty;
-    document.getElementById('editPurchasingUnitDisplay').textContent = item.unit || 'units';
+    
+    const editUnit = document.getElementById('editPurchasingUnit');
+    if (editUnit) editUnit.value = item.unit || 'pcs';
+    const editPrice = document.getElementById('editPurchasingPrice');
+    if (editPrice) editPrice.value = item.price || '';
+
     document.getElementById('editPurchasingColor').value = item.color || '';
     document.getElementById('editPurchasingDestinations').value = item.destinations || '';
     document.getElementById('editPurchasingNotes').value = item.notes || '';
@@ -450,7 +651,12 @@ function handleEditPurchasingSave(e) {
         return;
     }
 
+    const editUnit = document.getElementById('editPurchasingUnit');
+    const editPrice = document.getElementById('editPurchasingPrice');
+
     purchasingManifestItems[index].qty = newQty;
+    if (editUnit) purchasingManifestItems[index].unit = editUnit.value.trim() || 'pcs';
+    if (editPrice) purchasingManifestItems[index].price = editPrice.value.trim();
     purchasingManifestItems[index].color = document.getElementById('editPurchasingColor').value.trim() || 'Standard';
     purchasingManifestItems[index].destinations = document.getElementById('editPurchasingDestinations').value.trim() || '-';
     purchasingManifestItems[index].notes = document.getElementById('editPurchasingNotes').value.trim() || '';
@@ -471,6 +677,179 @@ function removePurchasingLine(index) {
     autoSavePurchasingDraft();
     updatePurchasingPrintHeader();
     renderPurchasingTable();
+}
+
+/**
+ * Open Modal to directly send a purchase item to Stock In
+ */
+function openDirectStockInModal(index) {
+    const item = purchasingManifestItems[index];
+    if (!item) return;
+
+    // Resolve product
+    let product = null;
+    if (item.productId) {
+        product = purchasingProductsCache.find(p => p.id === item.productId);
+    }
+    if (!product) {
+        product = purchasingProductsCache.find(p => 
+            p.name.toLowerCase().trim() === (item.name || '').toLowerCase().trim() &&
+            p.brand.toLowerCase().trim() === (item.brand || '').toLowerCase().trim()
+        );
+    }
+
+    if (!product) {
+        showToast('Product profile not found in active catalog.', 'error');
+        return;
+    }
+
+    document.getElementById('directStockInIndex').value = index;
+    document.getElementById('directStockInProductId').value = product.id;
+    document.getElementById('directStockInProductName').value = `${product.brand} - ${product.name} (${product.type === 2 ? 'Construction' : 'Electronics'})`;
+    document.getElementById('directStockInQty').value = item.qty;
+
+    // Calculate total batch cost if price provided
+    const unitPrice = parseFloat(item.price) || 0;
+    const totalCost = unitPrice > 0 ? (unitPrice * parseFloat(item.qty)).toFixed(2) : '';
+    document.getElementById('directStockInCost').value = totalCost;
+    document.getElementById('directStockInDate').value = new Date().toISOString().split('T')[0];
+
+    // Branch options
+    const branchSelect = document.getElementById('directStockInBranchSelect');
+    if (branchSelect) {
+        branchSelect.innerHTML = purchasingBranchesCache.map(b => 
+            `<option value="${b.id}">${escapeHtml(b.name)} ${b.type === 2 ? '(Construction)' : '(Electronics)'}</option>`
+        ).join('');
+
+        if (item.targetBranchId) {
+            branchSelect.value = item.targetBranchId;
+        } else if (item.destinations) {
+            const matchBranch = purchasingBranchesCache.find(b => 
+                item.destinations.toLowerCase().includes(b.name.toLowerCase())
+            );
+            if (matchBranch) branchSelect.value = matchBranch.id;
+        }
+    }
+
+    // Units selector
+    const unitSelect = document.getElementById('directStockInUnitSelect');
+    const units = AppState.units && AppState.units.length > 0 ? AppState.units : [];
+    if (unitSelect) {
+        if (units.length > 0) {
+            unitSelect.innerHTML = units.map(u => 
+                `<option value="${u.id}" ${u.id === product.unit_id ? 'selected' : ''}>${escapeHtml(u.name)} (${escapeHtml(u.symbol)})</option>`
+            ).join('');
+
+            // Match if cart item unit matches a unit symbol
+            if (item.unit) {
+                const matchedUnit = units.find(u => 
+                    u.symbol.toLowerCase() === item.unit.toLowerCase() || 
+                    u.name.toLowerCase() === item.unit.toLowerCase()
+                );
+                if (matchedUnit) {
+                    unitSelect.value = matchedUnit.id;
+                }
+            }
+        } else {
+            unitSelect.innerHTML = `<option value="${product.unit_id || 1}">${escapeHtml(product.unit_name || product.unit_symbol || 'pcs')}</option>`;
+        }
+    }
+
+    updateDirectStockInConversion();
+    openModal('directStockInModal');
+}
+
+/**
+ * Update packaging conversion display in Direct Stock In modal
+ */
+function updateDirectStockInConversion() {
+    const prodId = parseInt(document.getElementById('directStockInProductId').value, 10);
+    const product = purchasingProductsCache.find(p => p.id === prodId);
+    const unitSelect = document.getElementById('directStockInUnitSelect');
+    const convBox = document.getElementById('directStockInConversionBox');
+    const convFactorInput = document.getElementById('directStockInConversionFactor');
+    const convPrefix = document.getElementById('directStockInConversionPrefix');
+    const baseSuffix = document.getElementById('directStockInBaseUnitSuffix');
+
+    if (!product || !unitSelect || !convBox) return;
+
+    const selectedUnitId = parseInt(unitSelect.value, 10);
+    const baseUnitId = product.unit_id;
+    const baseUnitName = product.unit_symbol || product.unit_name || 'units';
+
+    const selectedUnitObj = (AppState.units || []).find(u => u.id === selectedUnitId);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'package';
+
+    if (selectedUnitId && baseUnitId && selectedUnitId !== baseUnitId) {
+        convBox.style.display = 'block';
+        if (convPrefix) convPrefix.textContent = `1 ${selectedUnitName} =`;
+        if (baseSuffix) baseSuffix.textContent = baseUnitName;
+        if (!convFactorInput.value || parseFloat(convFactorInput.value) <= 0) {
+            convFactorInput.value = '1';
+        }
+    } else {
+        convBox.style.display = 'none';
+        if (convFactorInput) convFactorInput.value = '1';
+    }
+}
+
+/**
+ * Submit Direct Stock In: Creates a verified Stock In ledger entry directly from purchase cart item
+ */
+async function handleDirectStockInSubmit(e) {
+    e.preventDefault();
+
+    const index = parseInt(document.getElementById('directStockInIndex').value, 10);
+    const branchId = parseInt(document.getElementById('directStockInBranchSelect').value, 10);
+    const productId = parseInt(document.getElementById('directStockInProductId').value, 10);
+    const qty = parseFloat(document.getElementById('directStockInQty').value);
+    const unitId = parseInt(document.getElementById('directStockInUnitSelect').value, 10);
+    const cost = parseFloat(document.getElementById('directStockInCost').value) || 0;
+    const date = document.getElementById('directStockInDate').value;
+    const conversionFactor = parseFloat(document.getElementById('directStockInConversionFactor').value) || 1.0;
+
+    if (!branchId || !productId || !unitId || isNaN(qty) || qty <= 0) {
+        showToast('Please fill all required stock-in fields with valid values.', 'error');
+        return;
+    }
+
+    try {
+        const payload = {
+            branch_id: branchId,
+            product_id: productId,
+            unit_id: unitId,
+            quantity: qty,
+            purchase_price: cost,
+            date: date,
+            conversion_factor: conversionFactor
+        };
+
+        const res = await fetch('/api/stock/in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || 'Failed to execute direct Stock In.');
+        }
+
+        showToast('📥 Item directly received into branch live inventory!', 'success');
+        closeModal('directStockInModal');
+
+        // Remove the received item from the purchasing cart draft
+        if (!isNaN(index) && purchasingManifestItems[index]) {
+            purchasingManifestItems.splice(index, 1);
+            window.purchasingManifestItems = purchasingManifestItems;
+            autoSavePurchasingDraft();
+            updatePurchasingPrintHeader();
+            renderPurchasingTable();
+        }
+    } catch (err) {
+        console.error('Direct Stock In error:', err);
+        showToast(err.message, 'error');
+    }
 }
 
 /**
@@ -512,11 +891,14 @@ function renderPurchasingTable() {
                     <input type="text" class="form-control" style="padding:4px 8px; font-size:13px; height:32px; width:100%; min-width:120px;" placeholder="Add remarks..." value="${escapeHtml(item.notes || '')}" onchange="updatePurchasingRemark(${idx}, this.value)">
                 </td>
                 <td class="action-column" data-label="${t('table.actions', 'Actions')}" style="text-align:right; white-space:nowrap;">
-                    <div style="display:flex; gap:6px; width:100%;">
-                        <button class="btn btn-secondary" style="flex:1; padding:6px 10px; font-size:12px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
+                    <div style="display:flex; gap:6px; width:100%; justify-content:flex-end;">
+                        <button class="btn btn-success" style="padding:6px 10px; font-size:12px; white-space:nowrap;" onclick="openDirectStockInModal(${idx})" title="Directly receive this item into branch stock in">
+                            📥 ${t('purchasing.direct_stockin', 'Send to Stock In')}
+                        </button>
+                        <button class="btn btn-secondary" style="padding:6px 10px; font-size:12px;" onclick="openEditPurchasingLine(${idx})" title="Edit line item">
                             ✏️ ${t('action.edit', 'Edit')}
                         </button>
-                        <button class="btn btn-danger-outline" style="flex:1; padding:6px 10px; font-size:12px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
+                        <button class="btn btn-danger-outline" style="padding:6px 10px; font-size:12px;" onclick="removePurchasingLine(${idx})" title="Remove from cart">
                             ✕ ${t('action.delete', 'Remove')}
                         </button>
                     </div>
@@ -542,8 +924,9 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Attach handlers to window
+// Attach handlers to window for HTML accessibility
 window.loadPurchasingView = loadPurchasingView;
+window.handlePurchasingBranchChange = handlePurchasingBranchChange;
 window.handlePurchasingAddLine = handlePurchasingAddLine;
 window.addLowStockToPurchasing = addLowStockToPurchasing;
 window.addOrMergePurchasingItem = addOrMergePurchasingItem;
@@ -558,3 +941,6 @@ window.handleEditPurchasingSave = handleEditPurchasingSave;
 window.removePurchasingLine = removePurchasingLine;
 window.filterPurchasingProducts = filterPurchasingProducts;
 window.selectPurchasingProduct = selectPurchasingProduct;
+window.openDirectStockInModal = openDirectStockInModal;
+window.updateDirectStockInConversion = updateDirectStockInConversion;
+window.handleDirectStockInSubmit = handleDirectStockInSubmit;

@@ -1040,6 +1040,362 @@ async function handleDamagedStockSubmit(e) {
     }
 }
 
+/**
+ * ============================================================================
+ * INTER-BRANCH STOCK TRANSFER LOGIC
+ * ============================================================================
+ */
+
+let transferProducts = [];
+let selectedTransferProduct = null;
+let transferPermittedBranches = [];
+
+async function openStockTransferModal(preferredFromBranchId = null, preferredProductId = null) {
+    try {
+        const fromSelect = document.getElementById('transferFromBranchSelect');
+
+        // Fetch branch and product data
+        const activeBranch = preferredFromBranchId || fromSelect?.value || '';
+        const res = await fetch(`/api/stock/out/init?branch_id=${activeBranch}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Could not load branch information.');
+        }
+
+        transferProducts = data.products || [];
+        transferPermittedBranches = data.permittedBranches || [];
+        AppState.units = data.units || [];
+
+        const activeFromId = preferredFromBranchId ? parseInt(preferredFromBranchId, 10) : data.selectedBranchId;
+
+        // Populate Source branch selector
+        if (fromSelect) {
+            fromSelect.innerHTML = transferPermittedBranches.map(b => 
+                `<option value="${b.id}" ${b.id === activeFromId ? 'selected' : ''}>${escapeHtml(b.name)}</option>`
+            ).join('');
+        }
+
+        // Populate Destination branch selector (excluding the selected source branch)
+        populateTransferToBranches(activeFromId);
+
+        // Populate Unit selector
+        const unitSelect = document.getElementById('transferUnitSelect');
+        if (unitSelect) {
+            unitSelect.innerHTML = AppState.units.map(u => 
+                `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.symbol)})</option>`
+            ).join('');
+            if (data.pieceUnitId) unitSelect.value = data.pieceUnitId;
+        }
+
+        renderTransferProductOptions(transferProducts);
+
+        // Reset inputs
+        selectedTransferProduct = null;
+        document.getElementById('transferProductId').value = '';
+        document.getElementById('transferProductTrigger').textContent = 'Click to select product to transfer...';
+        document.getElementById('transferQuantity').value = '';
+        document.getElementById('transferConversionFactor').value = '1';
+        document.getElementById('transferConversionBox').style.display = 'none';
+        document.getElementById('transferAvailableNotice').style.display = 'none';
+        document.getElementById('transferDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('transferNotes').value = '';
+
+        if (preferredProductId) {
+            selectTransferProduct(preferredProductId);
+        }
+
+        openModal('stockTransferModal');
+    } catch (err) {
+        showToast('Error opening stock transfer: ' + err.message, 'error');
+    }
+}
+
+function populateTransferToBranches(sourceBranchId) {
+    const toSelect = document.getElementById('transferToBranchSelect');
+    if (!toSelect) return;
+
+    const candidateBranches = transferPermittedBranches.filter(b => b.id !== parseInt(sourceBranchId, 10));
+    if (candidateBranches.length === 0) {
+        toSelect.innerHTML = '<option value="">No other facility available</option>';
+        return;
+    }
+
+    toSelect.innerHTML = candidateBranches.map(b => 
+        `<option value="${b.id}">${escapeHtml(b.name)}</option>`
+    ).join('');
+}
+
+async function handleTransferSourceBranchChange() {
+    const fromId = parseInt(document.getElementById('transferFromBranchSelect')?.value, 10);
+    if (!fromId) return;
+
+    populateTransferToBranches(fromId);
+
+    try {
+        const res = await fetch(`/api/stock/out/init?branch_id=${fromId}`);
+        const data = await res.json();
+        if (data.success) {
+            transferProducts = data.products || [];
+            renderTransferProductOptions(transferProducts);
+
+            selectedTransferProduct = null;
+            document.getElementById('transferProductId').value = '';
+            document.getElementById('transferProductTrigger').textContent = 'Click to select product to transfer...';
+            document.getElementById('transferAvailableNotice').style.display = 'none';
+            document.getElementById('transferConversionBox').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error switching source branch in transfer:', err);
+    }
+}
+
+function renderTransferProductOptions(products) {
+    const list = document.getElementById('transferOptionsList');
+    if (!list) return;
+
+    if (products.length === 0) {
+        list.innerHTML = `<div class="search-select-option" style="color:var(--text-muted); cursor:default;">No products in source branch</div>`;
+        return;
+    }
+
+    list.innerHTML = products.map(p => {
+        const qty = parseFloat(p.branch_quantity || 0);
+        const unit = p.unit_symbol || p.unit_name || '';
+
+        return `
+            <div class="search-select-option" onclick="selectTransferProduct(${p.id})">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:var(--text-primary);">${escapeHtml(p.brand)}</strong> - ${escapeHtml(p.name)}
+                        <span class="badge ${p.type === 1 ? 'badge-blue' : 'badge-emerald'}" style="font-size:10px; margin-left:4px;">
+                            ${p.type === 1 ? 'Electronics' : 'Construction'}
+                        </span>
+                    </div>
+                    <span class="badge ${qty <= 0 ? 'badge-red' : 'badge-emerald'}" style="font-size:10px;">
+                        ${formatNumber(qty, unit)} ${escapeHtml(unit)} in stock
+                    </span>
+                </div>
+                <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                    Base Unit: ${escapeHtml(p.unit_name || p.unit_symbol || 'N/A')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterTransferProducts(query) {
+    const q = query.toLowerCase().trim();
+    const filtered = transferProducts.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.brand.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+    );
+    renderTransferProductOptions(filtered);
+}
+
+function selectTransferProduct(productId) {
+    const product = transferProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    selectedTransferProduct = product;
+    document.getElementById('transferProductId').value = product.id;
+    document.getElementById('transferProductTrigger').textContent = `${product.brand} - ${product.name}`;
+
+    const unitSelect = document.getElementById('transferUnitSelect');
+    if (unitSelect && product.unit_id) {
+        unitSelect.value = product.unit_id;
+    }
+
+    const dropdown = document.getElementById('transferProductDropdown');
+    if (dropdown) dropdown.classList.remove('active');
+
+    updateTransferConversion();
+    updateTransferAvailableDisplay();
+}
+
+function updateTransferAvailableDisplay() {
+    const notice = document.getElementById('transferAvailableNotice');
+    const badge = document.getElementById('transferAvailableBadge');
+    const qtyInput = document.getElementById('transferQuantity');
+    if (!notice || !badge) return;
+
+    if (!selectedTransferProduct) {
+        notice.style.display = 'none';
+        return;
+    }
+
+    const baseQty = parseFloat(selectedTransferProduct.branch_quantity || 0);
+    const factor = parseFloat(document.getElementById('transferConversionFactor')?.value || 1);
+    const unitSelect = document.getElementById('transferUnitSelect');
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitSelect?.value);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
+    const baseUnitName = selectedTransferProduct.unit_symbol || selectedTransferProduct.unit_name || 'units';
+
+    const qtyInSelectedUnit = factor > 0 ? (baseQty / factor) : baseQty;
+
+    notice.style.display = 'flex';
+
+    if (baseQty <= 0) {
+        badge.className = 'badge badge-red font-bold';
+        badge.textContent = `0 ${baseUnitName} on shelf (Out of Stock)`;
+        if (qtyInput) qtyInput.max = '0';
+    } else {
+        badge.className = 'badge badge-emerald font-bold';
+        if (factor !== 1 && factor > 0) {
+            badge.textContent = `${formatNumber(qtyInSelectedUnit, selectedUnitName)} ${selectedUnitName} (${formatNumber(baseQty, baseUnitName)} ${baseUnitName} on shelf)`;
+        } else {
+            badge.textContent = `${formatNumber(baseQty, baseUnitName)} ${baseUnitName} on shelf`;
+        }
+        if (qtyInput) qtyInput.max = String(qtyInSelectedUnit);
+    }
+}
+
+async function updateTransferConversion() {
+    const unitId = document.getElementById('transferUnitSelect')?.value;
+    const factorInput = document.getElementById('transferConversionFactor');
+    const container = document.getElementById('transferConversionBox');
+    const prefix = document.getElementById('transferConversionPrefix');
+    const suffix = document.getElementById('transferBaseUnitSuffix');
+    const qtyInput = document.getElementById('transferQuantity');
+
+    if (qtyInput && unitId) {
+        const u = (AppState.units || []).find(x => x.id == unitId);
+        const isInt = u && /^(piece|pieces|box|boxes|set|sets|pack|packs|unit|units|carton|cartons|item|items|bag|bags|pcs|bx|sck|sack)$/i.test((u.name || u.symbol || '').trim());
+        if (isInt) {
+            qtyInput.step = '1';
+            qtyInput.min = '1';
+            qtyInput.placeholder = 'e.g. 10';
+        } else {
+            qtyInput.step = 'any';
+            qtyInput.min = '0.0001';
+            qtyInput.placeholder = '0.00';
+        }
+    }
+
+    if (!selectedTransferProduct || !unitId || !factorInput) return;
+
+    const baseUnitName = selectedTransferProduct.unit_symbol || selectedTransferProduct.unit_name || 'base units';
+    const selectedUnitObj = (AppState.units || []).find(u => u.id == unitId);
+    const selectedUnitName = selectedUnitObj ? (selectedUnitObj.symbol || selectedUnitObj.name) : 'selected unit';
+
+    if (parseInt(unitId, 10) === parseInt(selectedTransferProduct.unit_id, 10)) {
+        factorInput.value = '1';
+        if (container) container.style.display = 'none';
+        updateTransferAvailableDisplay();
+    } else {
+        if (container) container.style.display = 'block';
+        if (prefix) prefix.textContent = `1 ${selectedUnitName} =`;
+        if (suffix) suffix.textContent = `${baseUnitName}`;
+
+        try {
+            const res = await fetch(`/api/stock/conversions/${selectedTransferProduct.id}`);
+            const data = await res.json();
+            const match = (data.conversions || []).find(c => c.unit_id == unitId);
+            if (match && match.factor) {
+                factorInput.value = parseFloat(match.factor);
+            } else if (!factorInput.value || parseFloat(factorInput.value) <= 0 || factorInput.value === '1') {
+                factorInput.value = '1';
+            }
+        } catch (err) {
+            if (!factorInput.value || parseFloat(factorInput.value) <= 0) {
+                factorInput.value = '1';
+            }
+        }
+        updateTransferAvailableDisplay();
+    }
+}
+
+function onTransferFactorInput() {
+    updateTransferAvailableDisplay();
+}
+
+function onTransferQtyInput() {
+    updateTransferAvailableDisplay();
+}
+
+async function handleStockTransferSubmit(e) {
+    e.preventDefault();
+
+    const fromBranchId = parseInt(document.getElementById('transferFromBranchSelect')?.value, 10);
+    const toBranchId = parseInt(document.getElementById('transferToBranchSelect')?.value, 10);
+    const productId = parseInt(document.getElementById('transferProductId')?.value, 10);
+    const quantity = parseFloat(document.getElementById('transferQuantity')?.value);
+    const unitId = parseInt(document.getElementById('transferUnitSelect')?.value, 10);
+    const factor = parseFloat(document.getElementById('transferConversionFactor')?.value || 1);
+    const date = document.getElementById('transferDate')?.value;
+    const notes = document.getElementById('transferNotes')?.value.trim();
+
+    if (!productId) {
+        showToast('Please search and select a product to transfer.', 'error');
+        return;
+    }
+
+    if (!fromBranchId || !toBranchId) {
+        showToast('Please select both source and destination branches.', 'error');
+        return;
+    }
+
+    if (fromBranchId === toBranchId) {
+        showToast('Source and destination branches must be different!', 'error');
+        return;
+    }
+
+    if (isNaN(quantity) || quantity <= 0) {
+        showToast('Please enter a valid positive transfer quantity.', 'error');
+        return;
+    }
+
+    // Shelf stock check
+    if (selectedTransferProduct) {
+        const availableBase = parseFloat(selectedTransferProduct.branch_quantity || 0);
+        const reqBase = quantity * factor;
+        if (reqBase > availableBase) {
+            const unitLbl = selectedTransferProduct.unit_symbol || selectedTransferProduct.unit_name || 'units';
+            showToast(`Transfer exceeds shelf inventory! Available: ${formatNumber(availableBase, unitLbl)} ${unitLbl}, Attempted: ${formatNumber(reqBase, unitLbl)} ${unitLbl}.`, 'error');
+            return;
+        }
+    }
+
+    const payload = {
+        from_branch_id: fromBranchId,
+        to_branch_id: toBranchId,
+        product_id: productId,
+        unit_id: unitId,
+        quantity: quantity,
+        conversion_factor: factor,
+        notes: notes,
+        date: date
+    };
+
+    try {
+        const res = await fetch('/api/stock/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+            throw new Error(result.message || 'Transfer failed.');
+        }
+
+        showToast(result.message || 'Stock successfully transferred between branches!', 'success');
+        closeModal('stockTransferModal');
+
+        // Refresh active views
+        if (AppState.currentView === 'stock-out' && window.loadStockOutView) {
+            loadStockOutView(true);
+        } else if (AppState.currentView === 'stock-in' && window.loadStockInView) {
+            loadStockInView(true);
+        } else if (AppState.currentView === 'dashboard' && window.loadDashboardOverview) {
+            loadDashboardOverview();
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
 // Global Trigger toggles for custom search selects
 document.addEventListener('click', (e) => {
     // Stock In Trigger
@@ -1083,9 +1439,39 @@ document.addEventListener('click', (e) => {
             damDropdown.classList.remove('active');
         }
     }
+
+    // Transfer Stock Trigger
+    const transTrigger = document.getElementById('transferProductTrigger');
+    const transDropdown = document.getElementById('transferProductDropdown');
+    if (transTrigger && transDropdown) {
+        if (transTrigger.contains(e.target)) {
+            transDropdown.classList.toggle('active');
+            if (transDropdown.classList.contains('active')) {
+                document.getElementById('transferSearchInput')?.focus();
+            }
+        } else if (!transDropdown.contains(e.target)) {
+            transDropdown.classList.remove('active');
+        }
+    }
 });
 
-// Expose table renderers for reactive i18n
+// Expose table renderers and transfer handlers for reactive i18n and global triggers
 window.renderStockInInventoryTable = renderStockInInventoryTable;
 window.renderStockOutInventoryTable = renderStockOutInventoryTable;
+window.openStockTransferModal = openStockTransferModal;
+window.handleTransferSourceBranchChange = handleTransferSourceBranchChange;
+window.selectTransferProduct = selectTransferProduct;
+window.filterTransferProducts = filterTransferProducts;
+window.updateTransferConversion = updateTransferConversion;
+window.onTransferFactorInput = onTransferFactorInput;
+window.onTransferQtyInput = onTransferQtyInput;
+window.handleStockTransferSubmit = handleStockTransferSubmit;
+window.openDamagedStockModal = openDamagedStockModal;
+window.handleDamagedStockSubmit = handleDamagedStockSubmit;
+window.handleDamagedBranchChange = handleDamagedBranchChange;
+window.selectDamagedProduct = selectDamagedProduct;
+window.filterDamagedProducts = filterDamagedProducts;
+window.updateDamagedConversion = updateDamagedConversion;
+window.onDamagedFactorInput = onDamagedFactorInput;
+
 
