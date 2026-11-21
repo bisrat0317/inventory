@@ -18,116 +18,86 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/print.css">
 </head>
-<body>
+<body class="has-sidebar">
 
-    <!-- Global Top Navigation Header -->
-    <header class="app-header">
+    <!-- Mobile Top Navigation Header (Phone / Small Screens) -->
+    <header class="app-header mobile-only-header">
         <div class="header-left">
             <div class="mobile-menu-btn" onclick="toggleMobileDrawer()" title="Open Navigation Menu">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </div>
 
             <a href="#/dashboard" class="brand-badge" onclick="navigateTo('dashboard')">
-                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:34px; height:34px; flex-shrink:0;">
-                <div style="display:flex; flex-direction:column; line-height:1.15;">
-                    <span style="font-weight:800; font-size:16.5px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
-                    <span style="font-size:9.5px; color:#94A3B8; font-weight:600; letter-spacing:0.3px;" data-i18n="brand.tagline">Shop &amp; Inventory • Rebi Techs</span>
-                </div>
+                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:32px; height:32px; flex-shrink:0;">
+                <span style="font-weight:800; font-size:16px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
             </a>
-
-            <nav class="nav-tabs" id="desktopNavTabs">
-                <!-- Dynamically populated based on user role -->
-            </nav>
         </div>
 
         <div class="header-right">
-            <!-- Bilingual Language Switcher (Desktop Only) -->
-            <div class="lang-switch-container header-lang-switch hide-on-mobile" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
+            <div class="lang-switch-container header-lang-switch" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
                 <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
                 <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
             </div>
-
             <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" data-i18n-title="header.theme_toggle">
-                <svg width="18" height="18" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg width="18" height="18" id="themeIconMobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             </button>
-
-            <!-- Consolidated User Profile & Account Dropdown -->
-            <div class="user-dropdown-container hide-on-mobile" id="userDropdownContainer">
-                <button class="user-profile-btn" id="userProfileBtn" onclick="toggleUserDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account Menu">
-                    <span class="user-avatar-circle">👤</span>
-                    <span class="user-greeting"><span id="currentUserName">User</span></span>
-                    <span class="role-badge" id="currentUserRole">ADMIN</span>
-                    <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-
-                <!-- Floating Dropdown Menu -->
-                <div class="user-dropdown-menu" id="userDropdownMenu">
-                    <div class="user-dropdown-header">
-                        <div style="font-weight:700; font-size:13px; color:var(--text-primary);" id="dropdownFullName">Active Account</div>
-                        <div style="font-size:11px; color:var(--text-muted);">MEDEBER Operations Hub</div>
-                    </div>
-                    <div class="user-dropdown-divider"></div>
-                    <button class="user-dropdown-item" onclick="closeUserDropdown(); openChangePasswordModal();">
-                        <span class="dropdown-item-icon">🔑</span>
-                        <span data-i18n="header.password">Change Password</span>
-                    </button>
-                    <div class="user-dropdown-divider"></div>
-                    <button class="user-dropdown-item item-logout" onclick="closeUserDropdown(); handleLogout();">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        <span data-i18n="header.logout">Logout Account</span>
-                    </button>
-                </div>
-            </div>
         </div>
     </header>
 
-    <!-- Mobile Slide-over Drawer (Sidebar for Phone/Tablet) -->
+    <!-- Permanent Desktop Left Sidebar (and Mobile Slide-over Drawer) -->
     <div class="mobile-drawer-overlay" id="mobileDrawerOverlay" onclick="toggleMobileDrawer()"></div>
-    <aside class="mobile-drawer" id="mobileDrawer">
-        <div class="drawer-header">
-            <div class="brand-badge">
-                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:34px; height:34px;">
-                <div style="display:flex; flex-direction:column; line-height:1.15;">
-                    <span style="font-weight:800; font-size:17.5px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
-                    <span style="font-size:10px; color:var(--text-muted); font-weight:600;" data-i18n="brand.tagline">Shop &amp; Inventory</span>
+    <aside class="app-sidebar mobile-drawer" id="mobileDrawer">
+        <!-- Sidebar Brand Header -->
+        <div class="sidebar-brand-wrapper">
+            <a href="#/dashboard" class="sidebar-brand-badge" onclick="navigateTo('dashboard')">
+                <img src="/assets/logo-icon.svg" alt="MEDEBER Logo" style="width:36px; height:36px; flex-shrink:0;">
+                <div style="display:flex; flex-direction:column; line-height:1.2;">
+                    <span style="font-weight:800; font-size:18px; letter-spacing:0.5px; color:#F59E0B;" data-i18n="brand.name">MEDEBER</span>
+                    <span style="font-size:10px; color:#94A3B8; font-weight:600; letter-spacing:0.3px;" data-i18n="brand.tagline">Shop &amp; Inventory • Rebi Techs</span>
                 </div>
-            </div>
-            <button class="modal-close-btn" onclick="toggleMobileDrawer()" title="Close Menu">✕</button>
+            </a>
+            <button class="modal-close-btn mobile-close-btn" onclick="toggleMobileDrawer()" title="Close Menu">✕</button>
         </div>
 
-        <!-- User Profile & Language Switcher Banner in Side Bar -->
-        <div class="drawer-user-banner">
-            <div class="drawer-user-info">
-                <div class="drawer-user-avatar">👤</div>
-                <div>
-                    <div style="font-weight:700; font-size:14.5px; color:var(--text-primary);" id="drawerUserName">User</div>
-                    <span class="role-badge" style="font-size:10px; margin-top:3px; display:inline-block;" id="drawerUserRole">ADMIN</span>
-                </div>
+        <!-- User Identity Banner -->
+        <div class="sidebar-user-card">
+            <div class="sidebar-user-avatar">👤</div>
+            <div class="sidebar-user-details">
+                <div class="sidebar-user-name" id="drawerUserName">User</div>
+                <span class="role-badge" id="drawerUserRole">ADMIN</span>
             </div>
-            <div class="lang-switch-container drawer-lang-switch" title="Switch Language (ቋንቋ ቀይር)" data-i18n-title="header.lang_toggle">
-                <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
-                <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
+            <div class="sidebar-user-controls">
+                <div class="lang-switch-container sidebar-lang-switch" title="Switch Language" data-i18n-title="header.lang_toggle">
+                    <button type="button" class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                    <button type="button" class="lang-btn" data-lang="am" onclick="setLanguage('am')">አማ</button>
+                </div>
+                <button class="theme-toggle-btn sidebar-theme-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" data-i18n-title="header.theme_toggle">
+                    <svg width="16" height="16" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
             </div>
         </div>
 
-        <!-- Navigation Links in Drawer -->
-        <nav class="drawer-nav" id="mobileNavLinks">
+        <!-- Main Navigation Links List -->
+        <div class="sidebar-nav-label">MAIN NAVIGATION</div>
+        <nav class="sidebar-nav" id="mobileNavLinks">
             <!-- Dynamically populated based on permitted menus -->
         </nav>
 
-        <!-- Drawer Footer (Password Change & Logout) -->
-        <div class="drawer-footer">
-            <button class="btn btn-secondary" style="width:100%; justify-content:center; gap:8px; margin-bottom:8px; min-height:42px;" onclick="toggleMobileDrawer(); openChangePasswordModal();">
-                <span>🔑</span>
-                <span data-i18n="header.password">Change Password</span>
-            </button>
-            <button class="btn btn-danger-outline" style="width:100%; justify-content:center; gap:8px; min-height:42px; margin-bottom:12px;" onclick="handleLogout()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                <span data-i18n="header.logout">Logout Account</span>
-            </button>
+        <!-- Sidebar Footer (Account Actions & Developer Credits) -->
+        <div class="sidebar-footer">
+            <div class="sidebar-action-buttons">
+                <button class="btn btn-secondary btn-sm" style="flex:1; justify-content:center; gap:6px; font-size:12px; padding:7px 10px;" onclick="openChangePasswordModal()" title="Change Your Password">
+                    <span>🔑</span>
+                    <span data-i18n="header.password">Password</span>
+                </button>
+                <button class="btn btn-danger-outline btn-sm" style="flex:1; justify-content:center; gap:6px; font-size:12px; padding:7px 10px;" onclick="handleLogout()" title="Sign Out">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span data-i18n="header.logout">Logout</span>
+                </button>
+            </div>
 
-            <!-- Rebi Techs Developer Support Card -->
-            <div style="padding:10px; border-radius:8px; background:rgba(0,168,168,0.06); border:1px solid rgba(0,168,168,0.18); font-size:11px; text-align:center;">
+            <!-- Rebi Techs Brand Credit & Quick Contact Box -->
+            <div class="sidebar-rebi-card">
                 <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:6px;">
                     <span style="color:var(--text-muted); font-size:10px;">Developed by</span>
                     <img src="/assets/rebi-icon.png" alt="Rebi Techs" style="height:15px; width:auto; border-radius:2px;">
