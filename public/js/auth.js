@@ -188,7 +188,52 @@ async function handleLogout() {
     }
 }
 
+// User Profile Dropdown handlers
+function toggleUserDropdown(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('userDropdownMenu');
+    const btn = document.getElementById('userProfileBtn');
+    if (!menu) return;
+    
+    const isShowing = menu.classList.contains('show');
+    if (isShowing) {
+        closeUserDropdown();
+    } else {
+        menu.classList.add('show');
+        if (btn) {
+            btn.classList.add('active');
+            btn.setAttribute('aria-expanded', 'true');
+        }
+    }
+}
+
+function closeUserDropdown() {
+    const menu = document.getElementById('userDropdownMenu');
+    const btn = document.getElementById('userProfileBtn');
+    if (menu) menu.classList.remove('show');
+    if (btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-expanded', 'false');
+    }
+}
+
+// Close dropdown on outside click or escape key
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('userDropdownContainer');
+    if (container && !container.contains(e.target)) {
+        closeUserDropdown();
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeUserDropdown();
+    }
+});
+
 // Global exposure
+window.toggleUserDropdown = toggleUserDropdown;
+window.closeUserDropdown = closeUserDropdown;
 window.openChangePasswordModal = openChangePasswordModal;
 window.handleChangePasswordSubmit = handleChangePasswordSubmit;
 window.buildNavigation = buildNavigation;
