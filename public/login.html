@@ -256,6 +256,75 @@
             20%, 60% { transform: translateX(-6px); }
             40%, 80% { transform: translateX(6px); }
         }
+
+        /* Rebi Techs Brand Credit & Support Footer */
+        .rebi-footer {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rebi-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: rgba(13, 27, 68, 0.05);
+            border: 1px solid rgba(13, 27, 68, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        [data-theme="dark"] .rebi-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .rebi-badge span {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .rebi-badge strong {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .rebi-contacts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            font-size: 11px;
+        }
+
+        .rebi-contact-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .rebi-contact-item:hover {
+            color: #00A8A8;
+        }
+
+        .rebi-contact-item svg {
+            width: 13px;
+            height: 13px;
+            opacity: 0.85;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -274,7 +343,12 @@
                 <img src="/assets/logo.svg" alt="MEDEBER Logo" style="height:76px; width:auto; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(229,169,60,0.25));">
             </div>
             <h1 data-i18n="login.heading" style="color:var(--text-primary); font-size:24px; font-weight:800; letter-spacing:0.5px; margin:0 0 4px 0;">MEDEBER</h1>
-            <p data-i18n="login.subheading" style="color:var(--text-secondary); font-size:13.5px; margin:0;">Shop &amp; Inventory System</p>
+            <p data-i18n="login.subheading" style="color:var(--text-secondary); font-size:13.5px; margin:0 0 6px 0;">Shop &amp; Inventory System</p>
+            <div style="display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px;">
+                <span>by</span>
+                <img src="/assets/rebi-icon.png" alt="Rebi Techs" style="height:14px; width:auto; border-radius:2px; vertical-align:middle;">
+                <span style="color:#00A8A8; font-weight:700;">Rebi Techs</span>
+            </div>
         </div>
 
         <div class="error-alert" id="loginErrorMessage"></div>
@@ -314,6 +388,28 @@
                 <button type="button" class="role-chip" onclick="fillCredentials('staff', 'admin123')">
                     📦 Staff
                 </button>
+            </div>
+        </div>
+
+        <!-- Rebi Techs Brand & Support Footer -->
+        <div class="rebi-footer">
+            <div class="rebi-badge">
+                <span>Developed by</span>
+                <img src="/assets/rebi-logo.png" alt="Rebi Techs (ረቢ techs)" style="height:18px; width:auto; display:inline-block; vertical-align:middle;">
+            </div>
+            <div class="rebi-contacts">
+                <a href="mailto:bisratmulatu00@gmail.com" class="rebi-contact-item" title="Support Email">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>bisratmulatu00@gmail.com</span>
+                </a>
+                <a href="tel:+251976555989" class="rebi-contact-item" title="Call Technical Support">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <span>+251 976 555 989</span>
+                </a>
+                <a href="https://t.me/bisre_12" target="_blank" rel="noopener noreferrer" class="rebi-contact-item" title="Telegram Contact">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    <span>@bisre_12</span>
+                </a>
             </div>
         </div>
     </div>

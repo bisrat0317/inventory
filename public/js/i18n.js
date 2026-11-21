@@ -9,7 +9,7 @@ const translations = {
     en: {
         // App Header & Branding
         'brand.name': 'MEDEBER',
-        'brand.tagline': 'Shop & Inventory System',
+        'brand.tagline': 'Shop & Inventory System • Rebi Techs',
         'header.user_greeting': 'Hi,',
         'header.password': 'Password',
         'header.password_tooltip': 'Click to Change Password',
@@ -388,7 +388,7 @@ const translations = {
     am: {
         // App Header & Branding
         'brand.name': 'መደብር',
-        'brand.tagline': 'የሱቅ እና የክምችት አስተዳደር ሲስተም',
+        'brand.tagline': 'የሱቅ እና የክምችት አስተዳደር • ረቢ techs',
         'header.user_greeting': 'ሰላም፣',
         'header.password': 'የይለፍ ቃል',
         'header.password_tooltip': 'የይለፍ ቃልዎን ለመቀየር ይጫኑ',
