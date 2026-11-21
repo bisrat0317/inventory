@@ -631,12 +631,86 @@ body.has-sidebar {
 }
 
 .sidebar-rebi-card {
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: rgba(0, 168, 168, 0.05);
-    border: 1px solid rgba(0, 168, 168, 0.15);
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(0, 168, 168, 0.06);
+    border: 1px solid rgba(0, 168, 168, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.rebi-credit-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.rebi-credit-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.rebi-brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    background: rgba(0, 168, 168, 0.12);
+}
+
+.rebi-credit-icon {
+    height: 15px;
+    width: auto;
+    border-radius: 2px;
+    display: block;
+}
+
+.rebi-credit-name {
+    color: #00A8A8;
     font-size: 11px;
-    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.rebi-social-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.rebi-icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.rebi-icon-btn:hover {
+    background: #00A8A8;
+    color: #ffffff;
+    border-color: #00A8A8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 168, 168, 0.3);
+}
+
+.rebi-icon-btn svg {
+    display: block;
 }
 
 /* Main Content Area next to Sidebar */
@@ -717,9 +791,31 @@ body.has-sidebar .app-main {
     left: 0;
 }
 
-.mobile-drawer-overlay.open {
-    display: block;
-    opacity: 1;
+/* Overlay backdrop - Only on mobile screens */
+.mobile-drawer-overlay {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .mobile-drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9998;
+        display: none;
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+    }
+
+    .mobile-drawer-overlay.active {
+        display: block;
+        opacity: 1;
+    }
 }
 
 .drawer-header {
@@ -1414,23 +1510,38 @@ tr:hover td {
     background: rgba(255, 255, 255, 0.16);
 }
 
-.mobile-drawer-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 9998;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
+/* Mobile Drawer Overlay (Restricted to <= 1024px mobile/tablet screens only) */
+@media (max-width: 1024px) {
+    .mobile-drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9998;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .mobile-drawer-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
-.mobile-drawer-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+@media (min-width: 1025px) {
+    .mobile-drawer-overlay,
+    .mobile-drawer-overlay.active {
+        display: none !important;
+        pointer-events: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        opacity: 0 !important;
+    }
 }
 
 .mobile-drawer {
